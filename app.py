@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, abo
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import inspect, text
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'super-secret-key')
@@ -63,6 +64,25 @@ def admin_required(f):
 
 with app.app_context():
     db.create_all()
+    
+    # Auto-migrate new columns
+    try:
+        inspector = inspect(db.engine)
+        if 'user' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('user')]
+            if 'tiktok_username' not in columns:
+                db.session.execute(text('ALTER TABLE "user" ADD COLUMN tiktok_username VARCHAR(50)'))
+            if 'tiktok_last_changed' not in columns:
+                db.session.execute(text('ALTER TABLE "user" ADD COLUMN tiktok_last_changed TIMESTAMP'))
+        if 'task' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('task')]
+            if 'link' not in columns:
+                db.session.execute(text('ALTER TABLE task ADD COLUMN link VARCHAR(500)'))
+        db.session.commit()
+    except Exception as e:
+        print(f"Migration error: {e}")
+        db.session.rollback()
+
     # Create an admin user automatically if none exists
     if not User.query.filter_by(is_admin=True).first():
         admin_user = User(
