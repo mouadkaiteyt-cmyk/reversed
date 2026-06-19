@@ -2,6 +2,15 @@
 
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-6 sm:space-y-8 px-2 sm:px-0">
+    <style>
+        @keyframes float-star {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+            50% { transform: translateY(-10px) scale(1.2); opacity: 0.8; }
+        }
+        .animate-float-star {
+            animation: float-star 3s ease-in-out infinite;
+        }
+    </style>
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100">
         <div>
@@ -38,20 +47,27 @@
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         </div>
                     </div>
-                    <h2 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight">${{ "%.2f"|format(user.balance) }}</h2>
+                    <h2 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight">{{ "%.2f"|format(user.balance) }} <span class="text-3xl text-emerald-200 font-medium">$</span></h2>
                 </div>
                 
                 <div class="mt-6 pt-6 border-t border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    {% if user.auto_withdraw_threshold %}
-                    <p class="text-sm sm:text-base text-emerald-50 flex items-center bg-white/10 w-fit px-4 py-2 rounded-xl backdrop-blur-sm">
-                        <svg class="w-4 h-4 ml-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        السحب التلقائي مفعل عند بلوغ {{ user.auto_withdraw_threshold }}$
-                    </p>
+                    {% if user.ccp_account %}
+                        {% if user.auto_withdraw_threshold %}
+                        <p class="text-sm sm:text-base text-emerald-50 flex items-center bg-white/10 w-fit px-4 py-2 rounded-xl backdrop-blur-sm">
+                            <svg class="w-4 h-4 ml-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            السحب التلقائي مفعل عند بلوغ {{ user.auto_withdraw_threshold }}$
+                        </p>
+                        {% else %}
+                        <p class="text-sm sm:text-base text-emerald-50 flex items-center bg-white/10 w-fit px-4 py-2 rounded-xl backdrop-blur-sm">
+                            <svg class="w-4 h-4 ml-2 shrink-0 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            السحب التلقائي غير مفعل.
+                        </p>
+                        {% endif %}
                     {% else %}
-                    <p class="text-sm sm:text-base text-emerald-50 flex items-center bg-white/10 w-fit px-4 py-2 rounded-xl backdrop-blur-sm">
-                        <svg class="w-4 h-4 ml-2 shrink-0 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        السحب التلقائي غير مفعل.
-                    </p>
+                        <p class="text-sm sm:text-base text-rose-100 flex items-center bg-rose-500/30 border border-rose-400/30 w-fit px-4 py-2 rounded-xl backdrop-blur-sm">
+                            <svg class="w-4 h-4 ml-2 shrink-0 text-rose-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            الحساب البريدي (CCP) غير مسجل.
+                        </p>
                     {% endif %}
                     <a href="{{ url_for('settings') }}" class="text-sm font-bold bg-white text-emerald-700 px-5 py-2.5 rounded-xl hover:bg-emerald-50 transition shadow-sm text-center">إعدادات السحب</a>
                 </div>
@@ -138,32 +154,65 @@
         </div>
 
         <!-- Upgrade Section -->
-        <div class="bg-slate-900 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden flex flex-col justify-between shadow-xl group">
-            <div class="absolute top-0 right-0 w-40 h-40 bg-amber-500 opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity duration-500"></div>
-            <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-purple-500 opacity-20 rounded-full blur-xl"></div>
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden flex flex-col justify-between shadow-xl group border border-slate-700/50">
+            <!-- Animated background effects -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-colors duration-700 -mr-20 -mt-20 pointer-events-none"></div>
+            <div class="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-colors duration-700 -ml-10 -mb-10 pointer-events-none"></div>
+            
+            <!-- Floating stars animation (CSS required in base, simulated here with static position for now) -->
+            <div class="absolute top-8 left-8 text-amber-300/60 text-2xl animate-float-star pointer-events-none">✦</div>
+            <div class="absolute bottom-20 right-12 text-purple-300/60 text-xl animate-float-star pointer-events-none" style="animation-delay: 1.5s;">✦</div>
             
             <div class="relative z-10 h-full flex flex-col">
                 {% if user.is_upgraded %}
-                    <div class="text-center flex-1 flex flex-col justify-center items-center">
-                        <div class="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mb-6">
-                            <span class="text-5xl drop-shadow-lg">💎</span>
+                    <div class="text-center flex-1 flex flex-col justify-center items-center py-4">
+                        <div class="relative mb-6 group-hover:scale-110 transition-transform duration-500">
+                            <div class="absolute inset-0 bg-amber-400 blur-xl opacity-20 rounded-full"></div>
+                            <div class="w-24 h-24 bg-gradient-to-br from-amber-400/20 to-amber-600/20 border border-amber-400/30 rounded-2xl flex items-center justify-center rotate-3 group-hover:rotate-6 transition-transform">
+                                <span class="text-6xl drop-shadow-2xl">👑</span>
+                            </div>
                         </div>
-                        <h3 class="text-2xl font-bold mb-3 text-white">أنت من النخبة</h3>
-                        <p class="text-slate-300 text-sm leading-relaxed">تستمتع الآن بأقصى معدل أرباح. ضاعفنا أرباحك في الإحالات والمهام!</p>
+                        <h3 class="text-2xl sm:text-3xl font-extrabold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500">أنت من نخبة VIP</h3>
+                        <p class="text-slate-300 text-sm sm:text-base leading-relaxed px-4">تستمتع الآن بأقصى معدل أرباح. لقد ضاعفنا أرباحك <strong class="text-amber-400">10x</strong> في الإحالات والمهام!</p>
+                        
+                        <div class="mt-6 flex items-center justify-center space-x-4 space-x-reverse text-sm font-medium text-amber-200/80 bg-amber-500/10 px-6 py-3 rounded-full border border-amber-500/20">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            الحساب مفعل مدى الحياة
+                        </div>
                     </div>
                 {% else %}
                     <div class="flex-1">
-                        <div class="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center mb-6">
-                            <span class="text-3xl drop-shadow-lg">🚀</span>
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-br from-amber-400/20 to-amber-600/20 border border-amber-400/30 rounded-2xl flex items-center justify-center -rotate-3 group-hover:rotate-0 transition-transform">
+                                <span class="text-3xl drop-shadow-lg">🚀</span>
+                            </div>
+                            <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-500/30">عرض خاص</span>
                         </div>
-                        <h3 class="text-xl font-bold mb-3 text-white">ترقية حسابك لـ VIP</h3>
-                        <p class="text-slate-300 text-sm leading-relaxed mb-6">
-                            ضاعف أرباحك 10 مرات! احصل على <strong class="text-amber-400">0.1$</strong> لكل إحالة و <strong class="text-amber-400">0.5$</strong> لكل مهمة مقابل 10$ فقط لمرة واحدة.
-                        </p>
+                        <h3 class="text-2xl font-extrabold mb-3 text-white">ترقية حسابك لـ VIP</h3>
+                        
+                        <div class="space-y-3 mb-8">
+                            <div class="flex items-start">
+                                <svg class="w-5 h-5 text-amber-400 ml-3 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <p class="text-slate-300 text-sm">اربح <strong class="text-amber-400 text-base">0.1$</strong> لكل إحالة بدلاً من 0.01$</p>
+                            </div>
+                            <div class="flex items-start">
+                                <svg class="w-5 h-5 text-amber-400 ml-3 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <p class="text-slate-300 text-sm">اربح <strong class="text-amber-400 text-base">0.5$</strong> لكل مهمة بدلاً من 0.05$</p>
+                            </div>
+                            <div class="flex items-start">
+                                <svg class="w-5 h-5 text-amber-400 ml-3 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <p class="text-slate-300 text-sm">أولوية في سحب الأرباح والدعم</p>
+                            </div>
+                        </div>
                     </div>
                     <form action="{{ url_for('upgrade') }}" method="POST" class="mt-auto">
-                        <button type="submit" class="w-full flex items-center justify-center px-4 py-4 border border-transparent text-base font-bold rounded-xl text-slate-900 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            ترقية الآن مقابل 10$
+                        <button type="submit" class="relative w-full overflow-hidden group/btn flex items-center justify-center px-4 py-4 border border-transparent text-base font-bold rounded-xl text-slate-900 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-500 transition-all shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_25px_rgba(251,191,36,0.5)] transform hover:-translate-y-0.5">
+                            <span class="relative z-10 flex items-center">
+                                ترقية الآن مقابل 10$ فقط
+                                <svg class="w-5 h-5 mr-2 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </span>
+                            <!-- Shine effect -->
+                            <div class="absolute inset-0 h-full w-full scale-[2.0] blur-lg bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
                         </button>
                     </form>
                 {% endif %}
