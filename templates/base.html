@@ -23,6 +23,10 @@
                 </div>
                 <div class="flex items-center space-x-4 space-x-reverse">
                     {% if current_user.is_authenticated %}
+                        {% if current_user.is_admin %}
+                            <a href="{{ url_for('admin_dashboard') }}" class="text-amber-600 font-bold hover:text-amber-700 transition">لوحة الإدارة</a>
+                        {% endif %}
+                        <a href="{{ url_for('tasks') }}" class="text-slate-600 hover:text-emerald-600 transition">المهام</a>
                         <a href="{{ url_for('dashboard') }}" class="text-slate-600 hover:text-emerald-600 transition">لوحة التحكم</a>
                         <a href="{{ url_for('logout') }}" class="bg-red-50 text-red-600 px-4 py-2 rounded-full hover:bg-red-100 transition text-sm font-medium">تسجيل الخروج</a>
                     {% else %}
