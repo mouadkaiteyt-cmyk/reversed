@@ -16,11 +16,11 @@
                 <form action="{{ url_for('admin_add_task') }}" method="POST" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">عنوان المهمة</label>
-                        <input type="text" name="title" required class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                        <input type="text" name="title" required class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">وصف المهمة</label>
-                        <textarea name="description" rows="3" required class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></textarea>
+                        <textarea name="description" rows="3" required class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"></textarea>
                     </div>
                     <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-slate-900 hover:bg-slate-800 transition">
                         إضافة
@@ -33,7 +33,7 @@
                 <h3 class="text-xl font-bold text-slate-900 mb-4">المهام الحالية</h3>
                 <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
                     {% for task in tasks %}
-                        <div class="border border-slate-200 rounded-xl p-4 relative">
+                        <div class="border border-slate-200 rounded-xl p-4 relative hover:border-purple-200 transition">
                             <h4 class="font-bold text-slate-800">{{ task.title }}</h4>
                             <p class="text-xs text-slate-500 mt-1 line-clamp-2">{{ task.description }}</p>
                             <form action="{{ url_for('admin_delete_task', task_id=task.id) }}" method="POST" class="absolute top-4 left-4" onsubmit="return confirm('هل أنت متأكد من الحذف؟');">
@@ -74,11 +74,11 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     {% if u.is_admin %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">إدارة</span>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-amber-100 text-amber-800">إدارة</span>
                                     {% elif u.is_upgraded %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">مطور</span>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-purple-100 text-purple-800">مطور</span>
                                     {% else %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800">عادي</span>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-slate-100 text-slate-800">عادي</span>
                                     {% endif %}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600">
@@ -86,8 +86,8 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <form action="{{ url_for('admin_update_user', user_id=u.id) }}" method="POST" class="flex items-center space-x-2 space-x-reverse">
-                                        <input type="number" step="0.01" name="balance" value="{{ u.balance }}" class="w-20 px-2 py-1 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-emerald-500 text-left" dir="ltr">
-                                        <button type="submit" class="text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1 rounded-md transition text-xs">تحديث</button>
+                                        <input type="number" step="0.01" name="balance" value="{{ u.balance }}" class="w-20 px-2 py-1 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-purple-500 text-left" dir="ltr">
+                                        <button type="submit" class="text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded-md transition text-xs font-bold">تحديث</button>
                                     </form>
                                 </td>
                             </tr>
