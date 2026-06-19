@@ -22,6 +22,10 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">وصف المهمة</label>
                         <textarea name="description" rows="3" required class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"></textarea>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">رابط المهمة (اختياري)</label>
+                        <input type="url" name="link" placeholder="https://instagram.com/..." class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-left" dir="ltr">
+                    </div>
                     <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-slate-900 hover:bg-slate-800 transition">
                         إضافة
                     </button>
@@ -36,6 +40,9 @@
                         <div class="border border-slate-200 rounded-xl p-4 relative hover:border-purple-200 transition">
                             <h4 class="font-bold text-slate-800">{{ task.title }}</h4>
                             <p class="text-xs text-slate-500 mt-1 line-clamp-2">{{ task.description }}</p>
+                            {% if task.link %}
+                            <a href="{{ task.link }}" target="_blank" class="text-xs text-purple-600 hover:underline mt-1 block">رابط المهمة</a>
+                            {% endif %}
                             <form action="{{ url_for('admin_delete_task', task_id=task.id) }}" method="POST" class="absolute top-4 left-4" onsubmit="return confirm('هل أنت متأكد من الحذف؟');">
                                 <button type="submit" class="text-red-500 hover:text-red-700 font-bold text-sm">حذف</button>
                             </form>

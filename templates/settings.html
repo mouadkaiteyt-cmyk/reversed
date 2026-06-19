@@ -99,6 +99,46 @@
                             </div>
                         </div>
                     </div>
+                    <!-- TikTok -->
+                    <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-300 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-2 h-full bg-slate-900 transform origin-right transition-transform duration-300 group-hover:scale-y-110"></div>
+                        <div class="flex items-center mb-6">
+                            <div class="bg-slate-100 p-3 rounded-xl text-slate-900 ml-3 shrink-0">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.16-3.44-3.48-3.45-5.65-.03-1.93.89-3.9 2.45-5.11 1.25-.97 2.87-1.44 4.41-1.25v4.02c-1.12-.17-2.31.25-2.98 1.18-.55.77-.6 1.83-.17 2.65.41.79 1.25 1.34 2.14 1.38 1.32.06 2.59-.88 2.83-2.18.06-.31.06-.63.06-.94-.01-5.71-.01-11.42 0-17.13h3.98z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg sm:text-xl font-bold text-slate-800">حساب تيك توك</h3>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <label class="block text-sm font-semibold text-slate-700">اسم المستخدم (يوزر تيك توك)</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <span class="text-slate-400 font-medium sm:text-sm">@</span>
+                                </div>
+                                <input type="text" name="tiktok_username" value="{{ user.tiktok_username or '' }}" 
+                                    class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-colors text-left {% if not can_change_tk %}bg-slate-100 text-slate-500 cursor-not-allowed opacity-70{% else %}bg-slate-50 focus:bg-white{% endif %}" 
+                                    dir="ltr" placeholder="username" {% if not can_change_tk %}readonly{% endif %}>
+                            </div>
+                            
+                            <div class="mt-3">
+                                {% if not can_change_tk %}
+                                    <div class="p-3 rounded-xl bg-red-50 border border-red-100 flex items-start">
+                                        <svg class="w-5 h-5 text-red-500 ml-2 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                        <div>
+                                            <p class="text-xs text-red-600 font-medium">يجب الانتظار <strong>{{ tk_days_remaining }}</strong> يوماً لتتمكن من التغيير.</p>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <p class="text-xs text-slate-500 flex items-center">
+                                        <svg class="w-4 h-4 ml-1 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        يمكن التغيير مرة كل 60 يوماً
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Auto Withdraw (Radio Cards) -->

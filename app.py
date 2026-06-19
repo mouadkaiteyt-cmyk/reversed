@@ -31,6 +31,8 @@ class User(UserMixin, db.Model):
     auto_withdraw_threshold = db.Column(db.Integer, nullable=True)
     instagram_username = db.Column(db.String(50), nullable=True)
     instagram_last_changed = db.Column(db.DateTime, nullable=True)
+    tiktok_username = db.Column(db.String(50), nullable=True)
+    tiktok_last_changed = db.Column(db.DateTime, nullable=True)
 
     referrals = db.relationship('User', backref=db.backref('referrer', remote_side=[id]))
 
@@ -38,6 +40,7 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
+    link = db.Column(db.String(500), nullable=True)
     reward_normal = db.Column(db.Float, default=0.2)
     reward_upgraded = db.Column(db.Float, default=1.0)
 
@@ -103,13 +106,7 @@ def register():
             referrer = User.query.filter_by(referral_code=ref_code_post).first()
             if referrer:
                 referred_by_id = referrer.id
-                
-                # Reward the referrer
-                if referrer.is_upgraded:
-                    referrer.balance += 0.2
-                else:
-                    referrer.balance += 0.05
-                db.session.add(referrer)
+                # Note: We no longer reward immediately. The reward is given when the referred user completes 10 tasks.
 
         new_user = User(
             username=username,
@@ -153,7 +150,18 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    referrals_count = User.query.filter_by(referred_by=current_user.id).count()
+    all_referred = User.query.filter_by(referred_by=current_user.id).all()
+    pending_referrals_count = 0
+    active_referrals_count = 0
+    
+    for r_user in all_referred:
+        completed_count = CompletedTask.query.filter_by(user_id=r_user.id).count()
+        if completed_count >= 10:
+            active_referrals_count += 1
+        else:
+            pending_referrals_count += 1
+            
+    referrals_count = len(all_referred)
     all_tasks = Task.query.all()
     completed_task_ids = [ct.task_id for ct in CompletedTask.query.filter_by(user_id=current_user.id).all()]
     
@@ -164,6 +172,8 @@ def dashboard():
     return render_template('dashboard.html', 
                            user=current_user, 
                            referrals_count=referrals_count,
+                           active_referrals_count=active_referrals_count,
+                           pending_referrals_count=pending_referrals_count,
                            tasks=all_tasks,
                            completed_task_ids=completed_task_ids,
                            total_tasks=total_tasks,
@@ -176,6 +186,7 @@ def settings():
         ccp_account = request.form.get('ccp_account')
         threshold = request.form.get('auto_withdraw_threshold')
         instagram = request.form.get('instagram_username')
+        tiktok = request.form.get('tiktok_username')
 
         now = datetime.utcnow()
         
@@ -216,6 +227,21 @@ def settings():
         elif not instagram:
             pass
 
+        # TikTok Logic (60 days rule)
+        if tiktok and tiktok != current_user.tiktok_username:
+            if current_user.tiktok_last_changed:
+                days_since_tk = (now - current_user.tiktok_last_changed).days
+                if days_since_tk < 60:
+                    flash(f'لا يمكنك تغيير حساب تيك توك الآن. يرجى الانتظار {60 - days_since_tk} يوماً.', 'danger')
+                else:
+                    current_user.tiktok_username = tiktok
+                    current_user.tiktok_last_changed = now
+            else:
+                current_user.tiktok_username = tiktok
+                current_user.tiktok_last_changed = now
+        elif not tiktok:
+            pass
+
         db.session.commit()
         if not get_flashed_messages(category_filter=['danger']):
             flash('تم حفظ الإعدادات بنجاح.', 'success')
@@ -230,6 +256,15 @@ def settings():
             can_change_ig = False
             ig_days_remaining = 60 - days_since
 
+    # Calculate remaining days for TikTok
+    can_change_tk = True
+    tk_days_remaining = 0
+    if current_user.tiktok_last_changed:
+        days_since_tk = (datetime.utcnow() - current_user.tiktok_last_changed).days
+        if days_since_tk < 60:
+            can_change_tk = False
+            tk_days_remaining = 60 - days_since_tk
+
     # Calculate remaining days for CCP
     can_change_ccp = True
     ccp_days_remaining = 0
@@ -243,6 +278,8 @@ def settings():
                            user=current_user, 
                            can_change_ig=can_change_ig, 
                            ig_days_remaining=ig_days_remaining,
+                           can_change_tk=can_change_tk,
+                           tk_days_remaining=tk_days_remaining,
                            can_change_ccp=can_change_ccp,
                            ccp_days_remaining=ccp_days_remaining)
 
@@ -280,6 +317,17 @@ def complete_task(task_id):
     current_user.balance += reward
     db.session.commit()
     
+    # Check if this user just reached 10 tasks to reward their referrer
+    user_completed_count = CompletedTask.query.filter_by(user_id=current_user.id).count()
+    if user_completed_count == 10 and current_user.referred_by:
+        referrer = User.query.get(current_user.referred_by)
+        if referrer:
+            if referrer.is_upgraded:
+                referrer.balance += 0.2
+            else:
+                referrer.balance += 0.05
+            db.session.commit()
+    
     flash(f'تم إنجاز المهمة بنجاح! تمت إضافة {reward}$ إلى رصيدك.', 'success')
     return redirect(url_for('tasks'))
 
@@ -296,8 +344,9 @@ def admin_dashboard():
 def admin_add_task():
     title = request.form.get('title')
     description = request.form.get('description')
+    link = request.form.get('link')
     
-    new_task = Task(title=title, description=description)
+    new_task = Task(title=title, description=description, link=link)
     db.session.add(new_task)
     db.session.commit()
     
