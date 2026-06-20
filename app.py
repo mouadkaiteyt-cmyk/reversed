@@ -79,6 +79,18 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def check_auto_withdraw(user):
+    """Check if user has reached their auto withdraw threshold and create a request if so."""
+    if user.auto_withdraw_threshold and user.ccp_account:
+        if user.balance >= user.auto_withdraw_threshold:
+            # Check if they already have a pending request
+            existing_request = WithdrawalRequest.query.filter_by(user_id=user.id, status='pending').first()
+            if not existing_request:
+                amount = user.balance
+                user.balance = 0.0
+                new_request = WithdrawalRequest(user_id=user.id, amount=amount, ccp_account=user.ccp_account)
+                db.session.add(new_request)
+
 with app.app_context():
     db.create_all()
     
@@ -401,6 +413,7 @@ def complete_task(task_id):
     
     reward = task.reward_upgraded if current_user.is_upgraded else task.reward_normal
     current_user.balance += reward
+    check_auto_withdraw(current_user)
     db.session.commit()
     
     # Check if this user just reached 10 tasks to reward their referrer
@@ -412,41 +425,11 @@ def complete_task(task_id):
                 referrer.balance += 0.2
             else:
                 referrer.balance += 0.05
+            check_auto_withdraw(referrer)
             db.session.commit()
     
     flash(f'تم إنجاز المهمة بنجاح! تمت إضافة {reward}$ إلى رصيدك.', 'success')
     return redirect(url_for('tasks'))
-
-@app.route('/withdraw', methods=['POST'])
-@login_required
-def withdraw():
-    amount = current_user.balance
-    if not amount or amount < 10:
-        flash('أقل مبلغ للسحب هو 10 دولار.', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    if current_user.balance < amount:
-        flash('رصيدك غير كافٍ لإتمام عملية السحب.', 'danger')
-        return redirect(url_for('dashboard'))
-        
-    if not current_user.ccp_account:
-        flash('يرجى إضافة حساب CCP الخاص بك في الإعدادات قبل طلب السحب.', 'warning')
-        return redirect(url_for('settings'))
-        
-    # Check if there is already a pending request
-    existing_request = WithdrawalRequest.query.filter_by(user_id=current_user.id, status='pending').first()
-    if existing_request:
-        flash('لديك طلب سحب قيد المعالجة بالفعل. يرجى الانتظار حتى يتم معالجته.', 'warning')
-        return redirect(url_for('dashboard'))
-        
-    # Deduct balance and create request
-    current_user.balance -= amount
-    new_request = WithdrawalRequest(user_id=current_user.id, amount=amount, ccp_account=current_user.ccp_account)
-    db.session.add(new_request)
-    db.session.commit()
-    
-    flash('تم إرسال طلب السحب بنجاح! ستتم معالجته قريباً.', 'success')
-    return redirect(url_for('dashboard'))
 
 # Admin Routes
 @app.route('/admin')
@@ -577,6 +560,7 @@ def admin_update_user(user_id):
     if balance is not None:
         try:
             user.balance = float(balance)
+            check_auto_withdraw(user)
             db.session.commit()
             flash(f'تم تحديث رصيد المستخدم {user.username} بنجاح.', 'success')
         except ValueError:
