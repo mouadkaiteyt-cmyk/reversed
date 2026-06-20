@@ -497,7 +497,33 @@ def admin_dashboard():
     else:
         users = User.query.all()
         
-    tasks = Task.query.all()
+    for u in users:
+        u.completed_tasks_count = CompletedTask.query.filter_by(user_id=u.id).count()
+        referrals = User.query.filter_by(referred_by=u.id).all()
+        u.total_invites = len(referrals)
+        
+        u.active_invites = 0
+        u.inactive_invites = 0
+        u.upgraded_invites = 0
+        
+        for r in referrals:
+            if r.is_upgraded:
+                u.upgraded_invites += 1
+                
+            r_completed = CompletedTask.query.filter_by(user_id=r.id).count()
+            if r_completed >= 10:
+                u.active_invites += 1
+            else:
+                u.inactive_invites += 1
+                
+        u.upgraded_percentage = (u.upgraded_invites / u.total_invites * 100) if u.total_invites > 0 else 0
+        
+    task_query = request.args.get('tq', '')
+    if task_query:
+        tasks = Task.query.filter(Task.title.ilike(f'%{task_query}%') | Task.link.ilike(f'%{task_query}%')).all()
+    else:
+        tasks = Task.query.all()
+        
     # Add stats to tasks
     for task in tasks:
         task.completions_count = CompletedTask.query.filter_by(task_id=task.id).count()
@@ -592,13 +618,13 @@ def admin_add_task():
         platform = request.form.get('platform')
         post_link = request.form.get('target_link')
         if platform == 'tiktok':
-            title = 'تعليق على بوست تيك توك'
+            title = 'إعجاب وتعليق على بوست تيك توك'
         elif platform == 'instagram':
-            title = 'تعليق على بوست انستغرام'
+            title = 'إعجاب وتعليق على بوست انستغرام'
         else:
-            title = 'تعليق على بوست'
+            title = 'إعجاب وتعليق على بوست'
             
-        description = 'تعليق ايجابي'
+        description = 'إعجاب وتعليق ايجابي'
         link = post_link
     else:
         title = request.form.get('title')
