@@ -51,6 +51,17 @@ class CompletedTask(db.Model):
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False)
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class WithdrawalRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    ccp_account = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(20), default='pending') # pending, approved, rejected
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    processed_at = db.Column(db.DateTime, nullable=True)
+
+    user = db.relationship('User', backref=db.backref('withdrawals', lazy=True))
+
 class AppConfig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     normal_daily_limit = db.Column(db.Integer, default=1)
@@ -406,6 +417,37 @@ def complete_task(task_id):
     flash(f'تم إنجاز المهمة بنجاح! تمت إضافة {reward}$ إلى رصيدك.', 'success')
     return redirect(url_for('tasks'))
 
+@app.route('/withdraw', methods=['POST'])
+@login_required
+def withdraw():
+    amount = current_user.balance
+    if not amount or amount < 10:
+        flash('أقل مبلغ للسحب هو 10 دولار.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    if current_user.balance < amount:
+        flash('رصيدك غير كافٍ لإتمام عملية السحب.', 'danger')
+        return redirect(url_for('dashboard'))
+        
+    if not current_user.ccp_account:
+        flash('يرجى إضافة حساب CCP الخاص بك في الإعدادات قبل طلب السحب.', 'warning')
+        return redirect(url_for('settings'))
+        
+    # Check if there is already a pending request
+    existing_request = WithdrawalRequest.query.filter_by(user_id=current_user.id, status='pending').first()
+    if existing_request:
+        flash('لديك طلب سحب قيد المعالجة بالفعل. يرجى الانتظار حتى يتم معالجته.', 'warning')
+        return redirect(url_for('dashboard'))
+        
+    # Deduct balance and create request
+    current_user.balance -= amount
+    new_request = WithdrawalRequest(user_id=current_user.id, amount=amount, ccp_account=current_user.ccp_account)
+    db.session.add(new_request)
+    db.session.commit()
+    
+    flash('تم إرسال طلب السحب بنجاح! ستتم معالجته قريباً.', 'success')
+    return redirect(url_for('dashboard'))
+
 # Admin Routes
 @app.route('/admin')
 @admin_required
@@ -413,7 +455,51 @@ def admin_dashboard():
     users = User.query.all()
     tasks = Task.query.all()
     config = AppConfig.query.first()
-    return render_template('admin_dashboard.html', users=users, tasks=tasks, config=config)
+    
+    # Withdrawal Requests
+    pending_withdrawals = WithdrawalRequest.query.filter_by(status='pending').order_by(WithdrawalRequest.created_at.desc()).all()
+    completed_withdrawals = WithdrawalRequest.query.filter_by(status='approved').order_by(WithdrawalRequest.processed_at.desc()).limit(10).all()
+    
+    # Stats
+    total_users = User.query.count()
+    upgraded_users = User.query.filter_by(is_upgraded=True).count()
+    total_paid_result = db.session.query(db.func.sum(WithdrawalRequest.amount)).filter_by(status='approved').scalar()
+    total_paid = total_paid_result if total_paid_result else 0.0
+    pending_amount_result = db.session.query(db.func.sum(WithdrawalRequest.amount)).filter_by(status='pending').scalar()
+    pending_amount = pending_amount_result if pending_amount_result else 0.0
+
+    return render_template('admin_dashboard.html', 
+                           users=users, 
+                           tasks=tasks, 
+                           config=config,
+                           pending_withdrawals=pending_withdrawals,
+                           completed_withdrawals=completed_withdrawals,
+                           total_users=total_users,
+                           upgraded_users=upgraded_users,
+                           total_paid=total_paid,
+                           pending_amount=pending_amount)
+
+@app.route('/admin/withdrawals/<int:req_id>/<action>', methods=['POST'])
+@admin_required
+def admin_process_withdrawal(req_id, action):
+    req = WithdrawalRequest.query.get_or_404(req_id)
+    if req.status != 'pending':
+        flash('هذا الطلب تمت معالجته مسبقاً.', 'warning')
+        return redirect(url_for('admin_dashboard'))
+        
+    if action == 'approve':
+        req.status = 'approved'
+        req.processed_at = datetime.utcnow()
+        flash(f'تمت الموافقة على سحب {req.amount}$ للمستخدم {req.user.username}.', 'success')
+    elif action == 'reject':
+        req.status = 'rejected'
+        req.processed_at = datetime.utcnow()
+        # Refund the user
+        req.user.balance += req.amount
+        flash(f'تم رفض طلب السحب وتم إعادة {req.amount}$ لرصيد المستخدم {req.user.username}.', 'info')
+        
+    db.session.commit()
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/config/update', methods=['POST'])
 @admin_required

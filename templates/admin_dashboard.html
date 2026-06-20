@@ -2,202 +2,411 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900">لوحة الإدارة ⚙️</h1>
-        <p class="mt-2 text-slate-600">إدارة المستخدمين والمهام في المنصة.</p>
+    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">لوحة الإدارة الشاملة</h1>
+            <p class="mt-2 text-slate-600 font-medium">نظرة عامة على أداء المنصة، طلبات السحب، والمستخدمين.</p>
+        </div>
+        <div class="flex gap-2 overflow-x-auto pb-2 md:pb-0 hide-scrollbar" id="admin-tabs">
+            <button onclick="switchTab('stats')" id="tab-btn-stats" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap bg-slate-900 text-white shadow-md">الإحصائيات والسحوبات</button>
+            <button onclick="switchTab('users')" id="tab-btn-users" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap bg-white text-slate-600 border border-slate-200 hover:bg-slate-50">إدارة المستخدمين</button>
+            <button onclick="switchTab('tasks')" id="tab-btn-tasks" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap bg-white text-slate-600 border border-slate-200 hover:bg-slate-50">إدارة المهام</button>
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        <!-- قسم إضافة المهام -->
-        <div class="lg:col-span-1">
-            <div class="bg-white shadow-lg rounded-3xl p-6 border border-slate-100 mb-8">
-                <h3 class="text-xl font-bold text-slate-900 mb-4">إضافة مهمة جديدة</h3>
-                <form action="{{ url_for('admin_add_task') }}" method="POST" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">نوع المهمة</label>
-                        <select id="task_type" name="task_type" class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm" onchange="toggleTaskFields()">
-                            <option value="normal">مهمة عادية</option>
-                            <option value="follow">متابعة حساب (Tiktok / Instagram)</option>
-                            <option value="comment">تعليق على بوست (Tiktok / Instagram)</option>
-                        </select>
-                    </div>
+    <!-- Tab 1: Stats & Withdrawals -->
+    <div id="tab-stats" class="tab-content block space-y-8">
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-slate-500 mb-1">إجمالي المستخدمين</p>
+                    <h3 class="text-2xl font-black text-slate-900">{{ total_users }}</h3>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-slate-500 mb-1">حسابات VIP</p>
+                    <h3 class="text-2xl font-black text-slate-900">{{ upgraded_users }}</h3>
+                </div>
+            </div>
 
-                    <div id="platform_div" class="hidden">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">المنصة</label>
-                        <select name="platform" class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
-                            <option value="tiktok">تيك توك (TikTok)</option>
-                            <option value="instagram">انستغرام (Instagram)</option>
-                        </select>
-                    </div>
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-slate-500 mb-1">سحوبات معلقة</p>
+                    <h3 class="text-2xl font-black text-slate-900">{{ "%.2f"|format(pending_amount) }}$</h3>
+                </div>
+            </div>
 
-                    <div id="target_username_div" class="hidden">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">اسم المستخدم (User)</label>
-                        <input type="text" name="target_username" placeholder="username" class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-left" dir="ltr">
-                    </div>
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-slate-500 mb-1">إجمالي المدفوعات</p>
+                    <h3 class="text-2xl font-black text-slate-900">{{ "%.2f"|format(total_paid) }}$</h3>
+                </div>
+            </div>
+        </div>
 
-                    <div id="target_link_div" class="hidden">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">رابط البوست</label>
-                        <input type="url" name="target_link" placeholder="https://..." class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-left" dir="ltr">
-                    </div>
+        <!-- Withdrawals Table -->
+        <div class="bg-white shadow-sm rounded-3xl overflow-hidden border border-slate-100">
+            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-900">طلبات السحب المعلقة</h3>
+                <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">{{ pending_withdrawals|length }} طلب</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-right">
+                    <thead class="bg-white">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">المستخدم</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">المبلغ</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">رقم الحساب (CCP)</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">التاريخ</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">الإجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-100">
+                        {% for req in pending_withdrawals %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-bold text-slate-900">{{ req.user.username }}</div>
+                                <div class="text-xs text-slate-500">{{ req.user.email }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm font-black text-emerald-600">{{ "%.2f"|format(req.amount) }}$</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded inline-block">{{ req.ccp_account }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500" dir="ltr">
+                                {{ req.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex gap-2">
+                                    <form action="{{ url_for('admin_process_withdrawal', req_id=req.id, action='approve') }}" method="POST" onsubmit="return confirm('تأكيد الموافقة على الدفع؟');">
+                                        <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">موافقة و دفع</button>
+                                    </form>
+                                    <form action="{{ url_for('admin_process_withdrawal', req_id=req.id, action='reject') }}" method="POST" onsubmit="return confirm('هل أنت متأكد من الرفض؟ سيتم إعادة المبلغ لرصيد المستخدم.');">
+                                        <button type="submit" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">رفض</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                                <div class="flex flex-col items-center justify-center">
+                                    <svg class="w-12 h-12 text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <p class="font-medium">لا توجد طلبات سحب معلقة حالياً.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                    <div id="normal_title_div">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">عنوان المهمة</label>
-                        <input type="text" name="title" id="normal_title" required class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
-                    </div>
-                    <div id="normal_desc_div">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">وصف المهمة</label>
-                        <textarea name="description" id="normal_desc" rows="3" required class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"></textarea>
-                    </div>
-                    <div id="normal_link_div">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">رابط المهمة (اختياري)</label>
-                        <input type="url" name="link" placeholder="https://instagram.com/..." class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-left" dir="ltr">
-                    </div>
-                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-slate-900 hover:bg-slate-800 transition">
-                        إضافة
-                    </button>
-                </form>
+        <!-- Recently Completed Withdrawals -->
+        {% if completed_withdrawals %}
+        <div class="bg-white shadow-sm rounded-3xl overflow-hidden border border-slate-100">
+            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+                <h3 class="text-xl font-bold text-slate-900">آخر السحوبات المنجزة</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-right">
+                    <thead class="bg-white">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">المستخدم</th>
+                            <th scope="col" class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">المبلغ</th>
+                            <th scope="col" class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">تاريخ التنفيذ</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-100">
+                        {% for req in completed_withdrawals %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-3 whitespace-nowrap">
+                                <div class="text-sm font-medium text-slate-900">{{ req.user.username }}</div>
+                            </td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm font-bold text-emerald-600">
+                                {{ "%.2f"|format(req.amount) }}$
+                            </td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-500" dir="ltr">
+                                {{ req.processed_at.strftime('%Y-%m-%d %H:%M') if req.processed_at else '' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
 
-                <script>
-                    function toggleTaskFields() {
-                        const type = document.getElementById('task_type').value;
-                        const platformDiv = document.getElementById('platform_div');
-                        const usernameDiv = document.getElementById('target_username_div');
-                        const linkDiv = document.getElementById('target_link_div');
-                        const normalTitleDiv = document.getElementById('normal_title_div');
-                        const normalDescDiv = document.getElementById('normal_desc_div');
-                        const normalLinkDiv = document.getElementById('normal_link_div');
-                        const titleInput = document.getElementById('normal_title');
-                        const descInput = document.getElementById('normal_desc');
+    <!-- Tab 2: Users Management -->
+    <div id="tab-users" class="tab-content hidden space-y-6">
+        <div class="bg-white shadow-sm rounded-3xl overflow-hidden border border-slate-100">
+            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+                <h3 class="text-xl font-bold text-slate-900">سجل المستخدمين وتفاصيل الحسابات</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-right">
+                    <thead class="bg-white">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">المعرف</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">المستخدم / البريد</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">تفاصيل الحسابات</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">النوع</th>
+                            <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">الرصيد وإدارته</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-100">
+                        {% for u in users %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-400">#{{ u.id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-bold text-slate-900">{{ u.username }}</div>
+                                <div class="text-xs text-slate-500">{{ u.email }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex flex-col gap-1">
+                                    {% if u.ccp_account %}
+                                        <span class="text-xs font-medium text-slate-600"><span class="text-slate-400">CCP:</span> {{ u.ccp_account }}</span>
+                                    {% else %}
+                                        <span class="text-xs text-slate-400">لا يوجد CCP</span>
+                                    {% endif %}
+                                    
+                                    {% if u.tiktok_username %}
+                                        <span class="text-xs font-medium text-slate-600"><span class="text-slate-400">TikTok:</span> {{ u.tiktok_username }}</span>
+                                    {% endif %}
+                                    
+                                    {% if u.instagram_username %}
+                                        <span class="text-xs font-medium text-slate-600"><span class="text-slate-400">Insta:</span> {{ u.instagram_username }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if u.is_admin %}
+                                    <span class="px-2.5 py-1 inline-flex text-xs font-bold rounded-lg bg-slate-900 text-white">إدارة</span>
+                                {% elif u.is_upgraded %}
+                                    <span class="px-2.5 py-1 inline-flex text-xs font-bold rounded-lg bg-purple-100 text-purple-700">VIP</span>
+                                {% else %}
+                                    <span class="px-2.5 py-1 inline-flex text-xs font-bold rounded-lg bg-slate-100 text-slate-600">عادي</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <form action="{{ url_for('admin_update_user', user_id=u.id) }}" method="POST" class="flex items-center gap-2">
+                                    <input type="number" step="0.01" name="balance" value="{{ u.balance }}" class="w-24 px-3 py-1.5 text-sm font-bold border border-slate-300 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-left" dir="ltr">
+                                    <button type="submit" class="text-white bg-slate-800 hover:bg-slate-900 px-3 py-1.5 rounded-lg transition text-xs font-bold shadow-sm">حفظ</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-                        if (type === 'normal') {
-                            platformDiv.classList.add('hidden');
-                            usernameDiv.classList.add('hidden');
-                            linkDiv.classList.add('hidden');
-                            normalTitleDiv.classList.remove('hidden');
-                            normalDescDiv.classList.remove('hidden');
-                            normalLinkDiv.classList.remove('hidden');
-                            titleInput.required = true;
-                            descInput.required = true;
-                        } else if (type === 'follow') {
-                            platformDiv.classList.remove('hidden');
-                            usernameDiv.classList.remove('hidden');
-                            linkDiv.classList.add('hidden');
-                            normalTitleDiv.classList.add('hidden');
-                            normalDescDiv.classList.add('hidden');
-                            normalLinkDiv.classList.add('hidden');
-                            titleInput.required = false;
-                            descInput.required = false;
-                        } else if (type === 'comment') {
-                            platformDiv.classList.remove('hidden');
-                            usernameDiv.classList.add('hidden');
-                            linkDiv.classList.remove('hidden');
-                            normalTitleDiv.classList.add('hidden');
-                            normalDescDiv.classList.add('hidden');
-                            normalLinkDiv.classList.add('hidden');
-                            titleInput.required = false;
-                            descInput.required = false;
-                        }
-                    }
-                    // Run once on load to set initial state
-                    document.addEventListener('DOMContentLoaded', toggleTaskFields);
-                </script>
+    <!-- Tab 3: Tasks & Config -->
+    <div id="tab-tasks" class="tab-content hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- إعدادات المهام -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white shadow-sm rounded-3xl p-6 border border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">إعدادات المهام اليومية</h3>
+                    <form action="{{ url_for('admin_update_config') }}" method="POST" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">الحد اليومي للحساب العادي</label>
+                            <input type="number" name="normal_daily_limit" value="{{ config.normal_daily_limit }}" required min="1" class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-left" dir="ltr">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">الحد اليومي للحساب المطور</label>
+                            <input type="number" name="upgraded_daily_limit" value="{{ config.upgraded_daily_limit }}" required min="1" class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-left" dir="ltr">
+                        </div>
+                        <button type="submit" class="w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-slate-900 hover:bg-slate-800 transition shadow-md">
+                            تحديث الإعدادات
+                        </button>
+                    </form>
+                </div>
+
+                <!-- إضافة مهمة -->
+                <div class="bg-white shadow-sm rounded-3xl p-6 border border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">إضافة مهمة جديدة</h3>
+                    <form action="{{ url_for('admin_add_task') }}" method="POST" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">نوع المهمة</label>
+                            <select id="task_type" name="task_type" class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm" onchange="toggleTaskFields()">
+                                <option value="normal">مهمة عادية</option>
+                                <option value="follow">متابعة حساب (Tiktok / Instagram)</option>
+                                <option value="comment">تعليق على بوست (Tiktok / Instagram)</option>
+                            </select>
+                        </div>
+
+                        <div id="platform_div" class="hidden">
+                            <label class="block text-sm font-bold text-slate-700 mb-1">المنصة</label>
+                            <select name="platform" class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                                <option value="tiktok">تيك توك (TikTok)</option>
+                                <option value="instagram">انستغرام (Instagram)</option>
+                            </select>
+                        </div>
+
+                        <div id="target_username_div" class="hidden">
+                            <label class="block text-sm font-bold text-slate-700 mb-1">اسم المستخدم (User)</label>
+                            <input type="text" name="target_username" placeholder="username" class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-left" dir="ltr">
+                        </div>
+
+                        <div id="target_link_div" class="hidden">
+                            <label class="block text-sm font-bold text-slate-700 mb-1">رابط البوست</label>
+                            <input type="url" name="target_link" placeholder="https://..." class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-left" dir="ltr">
+                        </div>
+
+                        <div id="normal_title_div">
+                            <label class="block text-sm font-bold text-slate-700 mb-1">عنوان المهمة</label>
+                            <input type="text" name="title" id="normal_title" required class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                        </div>
+                        <div id="normal_desc_div">
+                            <label class="block text-sm font-bold text-slate-700 mb-1">وصف المهمة</label>
+                            <textarea name="description" id="normal_desc" rows="3" required class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"></textarea>
+                        </div>
+                        <div id="normal_link_div">
+                            <label class="block text-sm font-bold text-slate-700 mb-1">رابط المهمة (اختياري)</label>
+                            <input type="url" name="link" placeholder="https://..." class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-left" dir="ltr">
+                        </div>
+                        <button type="submit" class="w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-purple-600 hover:bg-purple-700 transition shadow-md">
+                            إضافة المهمة
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <!-- المهام الحالية -->
-            <div class="bg-white shadow-lg rounded-3xl p-6 border border-slate-100">
-                <h3 class="text-xl font-bold text-slate-900 mb-4">المهام الحالية</h3>
-                <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
-                    {% for task in tasks %}
-                        <div class="border border-slate-200 rounded-xl p-4 relative hover:border-purple-200 transition">
-                            <h4 class="font-bold text-slate-800">{{ task.title }}</h4>
-                            <p class="text-xs text-slate-500 mt-1 line-clamp-2">{{ task.description }}</p>
-                            {% if task.link %}
-                            <a href="{{ task.link }}" target="_blank" class="text-xs text-purple-600 hover:underline mt-1 block">رابط المهمة</a>
-                            {% endif %}
-                            <form action="{{ url_for('admin_delete_task', task_id=task.id) }}" method="POST" class="absolute top-4 left-4" onsubmit="return confirm('هل أنت متأكد من الحذف؟');">
-                                <button type="submit" class="text-red-500 hover:text-red-700 font-bold text-sm">حذف</button>
-                            </form>
-                        </div>
-                    {% else %}
-                        <p class="text-slate-500 text-sm">لا توجد مهام.</p>
-                    {% endfor %}
+            <div class="lg:col-span-2">
+                <div class="bg-white shadow-sm rounded-3xl p-6 border border-slate-100">
+                    <h3 class="text-xl font-bold text-slate-900 mb-6">المهام الحالية في النظام</h3>
+                    <div class="space-y-4 max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
+                        {% for task in tasks %}
+                            <div class="border border-slate-200 rounded-2xl p-5 relative hover:border-purple-300 hover:shadow-md transition-all group bg-slate-50/50">
+                                <h4 class="font-bold text-slate-900 text-lg pr-12">{{ task.title }}</h4>
+                                <p class="text-sm text-slate-600 mt-2">{{ task.description }}</p>
+                                {% if task.link %}
+                                <a href="{{ task.link }}" target="_blank" class="inline-flex items-center gap-1 text-sm font-bold text-purple-600 hover:text-purple-800 mt-3">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                    رابط المهمة
+                                </a>
+                                {% endif %}
+                                <form action="{{ url_for('admin_delete_task', task_id=task.id) }}" method="POST" class="absolute top-5 right-5" onsubmit="return confirm('هل أنت متأكد من الحذف؟');">
+                                    <button type="submit" class="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-colors" title="حذف المهمة">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </form>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                <p class="text-slate-500 font-medium">لا توجد مهام حالياً.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- قسم إدارة المستخدمين والإعدادات -->
-        <div class="lg:col-span-2 space-y-8">
-            <!-- إعدادات المهام -->
-            <div class="bg-white shadow-lg rounded-3xl p-6 border border-slate-100">
-                <h3 class="text-xl font-bold text-slate-900 mb-4">إعدادات المهام اليومية</h3>
-                <form action="{{ url_for('admin_update_config') }}" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">الحد اليومي للحساب العادي</label>
-                        <input type="number" name="normal_daily_limit" value="{{ config.normal_daily_limit }}" required min="1" class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-left" dir="ltr">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">الحد اليومي للحساب المطور</label>
-                        <input type="number" name="upgraded_daily_limit" value="{{ config.upgraded_daily_limit }}" required min="1" class="appearance-none rounded-xl relative block w-full px-4 py-2 border border-slate-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-left" dir="ltr">
-                    </div>
-                    <div class="md:col-span-2">
-                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-slate-900 hover:bg-slate-800 transition">
-                            حفظ الإعدادات
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- جدول المستخدمين -->
-            <div class="bg-white shadow-lg rounded-3xl overflow-hidden border border-slate-100">
-                <div class="px-6 py-5 border-b border-slate-200">
-                    <h3 class="text-xl font-bold text-slate-900">إدارة المستخدمين والأرصدة</h3>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 text-right">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">المعرف</th>
-                                <th scope="col" class="px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">المستخدم</th>
-                                <th scope="col" class="px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">النوع</th>
-                                <th scope="col" class="px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">الرصيد ($)</th>
-                                <th scope="col" class="px-6 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">تعديل</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-slate-200">
-                            {% for u in users %}
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{{ u.id }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-slate-900">{{ u.username }}</div>
-                                    <div class="text-sm text-slate-500">{{ u.email }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    {% if u.is_admin %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-amber-100 text-amber-800">إدارة</span>
-                                    {% elif u.is_upgraded %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-purple-100 text-purple-800">مطور</span>
-                                    {% else %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-bold rounded-full bg-slate-100 text-slate-800">عادي</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600">
-                                    {{ "%.2f"|format(u.balance) }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <form action="{{ url_for('admin_update_user', user_id=u.id) }}" method="POST" class="flex items-center space-x-2 space-x-reverse">
-                                        <input type="number" step="0.01" name="balance" value="{{ u.balance }}" class="w-20 px-2 py-1 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-purple-500 text-left" dir="ltr">
-                                        <button type="submit" class="text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded-md transition text-xs font-bold">تحديث</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
     </div>
 </div>
+
+<script>
+    function switchTab(tabId) {
+        // Hide all contents
+        document.querySelectorAll('.tab-content').forEach(el => {
+            el.classList.add('hidden');
+            el.classList.remove('block');
+        });
+        
+        // Reset all buttons
+        document.querySelectorAll('.tab-btn').forEach(el => {
+            el.className = 'tab-btn px-4 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap bg-white text-slate-600 border border-slate-200 hover:bg-slate-50';
+        });
+        
+        // Show selected content
+        document.getElementById('tab-' + tabId).classList.remove('hidden');
+        document.getElementById('tab-' + tabId).classList.add('block');
+        
+        // Activate selected button
+        document.getElementById('tab-btn-' + tabId).className = 'tab-btn px-4 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap bg-slate-900 text-white shadow-md';
+    }
+
+    function toggleTaskFields() {
+        const type = document.getElementById('task_type').value;
+        const platformDiv = document.getElementById('platform_div');
+        const usernameDiv = document.getElementById('target_username_div');
+        const linkDiv = document.getElementById('target_link_div');
+        const normalTitleDiv = document.getElementById('normal_title_div');
+        const normalDescDiv = document.getElementById('normal_desc_div');
+        const normalLinkDiv = document.getElementById('normal_link_div');
+        const titleInput = document.getElementById('normal_title');
+        const descInput = document.getElementById('normal_desc');
+
+        if (type === 'normal') {
+            platformDiv.classList.add('hidden');
+            usernameDiv.classList.add('hidden');
+            linkDiv.classList.add('hidden');
+            normalTitleDiv.classList.remove('hidden');
+            normalDescDiv.classList.remove('hidden');
+            normalLinkDiv.classList.remove('hidden');
+            titleInput.required = true;
+            descInput.required = true;
+        } else if (type === 'follow') {
+            platformDiv.classList.remove('hidden');
+            usernameDiv.classList.remove('hidden');
+            linkDiv.classList.add('hidden');
+            normalTitleDiv.classList.add('hidden');
+            normalDescDiv.classList.add('hidden');
+            normalLinkDiv.classList.add('hidden');
+            titleInput.required = false;
+            descInput.required = false;
+        } else if (type === 'comment') {
+            platformDiv.classList.remove('hidden');
+            usernameDiv.classList.add('hidden');
+            linkDiv.classList.remove('hidden');
+            normalTitleDiv.classList.add('hidden');
+            normalDescDiv.classList.add('hidden');
+            normalLinkDiv.classList.add('hidden');
+            titleInput.required = false;
+            descInput.required = false;
+        }
+    }
+    // Run once on load to set initial state
+    document.addEventListener('DOMContentLoaded', toggleTaskFields);
+</script>
+
+<style>
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 20px;
+    }
+</style>
 {% endblock %}
