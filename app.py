@@ -1,5 +1,6 @@
 import os
 import uuid
+import json
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
@@ -90,6 +91,17 @@ def admin_required(f):
             abort(403)
         return f(*args, **kwargs)
     return decorated_function
+
+def model_to_dict(obj):
+    """Convert SQLAlchemy model instance to dictionary."""
+    d = {}
+    for column in obj.__table__.columns:
+        val = getattr(obj, column.name)
+        if isinstance(val, datetime):
+            d[column.name] = val.isoformat()
+        else:
+            d[column.name] = val
+    return d
 
 def check_auto_withdraw(user):
     """Check if user has reached their auto withdraw threshold and create a request if so."""
@@ -663,6 +675,103 @@ def admin_update_user(user_id):
             flash('الرصيد المدخل غير صالح.', 'danger')
             
     return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/backup/export')
+@admin_required
+def export_backup():
+    data = {
+        'users': [model_to_dict(u) for u in User.query.all()],
+        'tasks': [model_to_dict(t) for t in Task.query.all()],
+        'completed_tasks': [model_to_dict(c) for c in CompletedTask.query.all()],
+        'withdrawals': [model_to_dict(w) for w in WithdrawalRequest.query.all()],
+        'config': [model_to_dict(c) for c in AppConfig.query.all()]
+    }
+    
+    response = app.response_class(
+        response=json.dumps(data, ensure_ascii=False, indent=2),
+        status=200,
+        mimetype='application/json'
+    )
+    filename = f'backup_{datetime.utcnow().strftime("%Y%m%d_%H%M%S")}.json'
+    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+    return response
+
+@app.route('/admin/backup/import', methods=['POST'])
+@admin_required
+def import_backup():
+    if 'backup_file' not in request.files:
+        flash('لم يتم تحديد ملف.', 'danger')
+        return redirect(url_for('admin_dashboard') + '?tab=tasks')
+        
+    file = request.files['backup_file']
+    if file.filename == '':
+        flash('لم يتم تحديد ملف.', 'danger')
+        return redirect(url_for('admin_dashboard') + '?tab=tasks')
+        
+    if not file.filename.endswith('.json'):
+        flash('يجب أن يكون الملف بصيغة JSON.', 'danger')
+        return redirect(url_for('admin_dashboard') + '?tab=tasks')
+        
+    try:
+        data = json.load(file)
+        
+        # Clear existing data
+        WithdrawalRequest.query.delete()
+        CompletedTask.query.delete()
+        Task.query.delete()
+        AppConfig.query.delete()
+        
+        # Remove foreign keys before deleting users
+        User.query.update({User.referred_by: None})
+        User.query.delete()
+        
+        db.session.commit()
+        
+        def parse_dt(val):
+            return datetime.fromisoformat(val) if val else None
+
+        # Restore Users
+        for u_data in data.get('users', []):
+            u = User(**{k: v for k, v in u_data.items() if k not in ['ccp_last_changed', 'instagram_last_changed', 'tiktok_last_changed', 'membership_expires_at']})
+            u.ccp_last_changed = parse_dt(u_data.get('ccp_last_changed'))
+            u.instagram_last_changed = parse_dt(u_data.get('instagram_last_changed'))
+            u.tiktok_last_changed = parse_dt(u_data.get('tiktok_last_changed'))
+            u.membership_expires_at = parse_dt(u_data.get('membership_expires_at'))
+            db.session.add(u)
+        db.session.commit()
+        
+        # Restore Tasks
+        for t_data in data.get('tasks', []):
+            t = Task(**t_data)
+            db.session.add(t)
+            
+        # Restore Config
+        for c_data in data.get('config', []):
+            c = AppConfig(**c_data)
+            db.session.add(c)
+            
+        # Restore Completed Tasks
+        for ct_data in data.get('completed_tasks', []):
+            ct = CompletedTask(**{k: v for k, v in ct_data.items() if k != 'completed_at'})
+            ct.completed_at = parse_dt(ct_data.get('completed_at'))
+            db.session.add(ct)
+            
+        # Restore Withdrawals
+        for w_data in data.get('withdrawals', []):
+            w = WithdrawalRequest(**{k: v for k, v in w_data.items() if k not in ['created_at', 'processed_at']})
+            w.created_at = parse_dt(w_data.get('created_at'))
+            w.processed_at = parse_dt(w_data.get('processed_at'))
+            db.session.add(w)
+            
+        db.session.commit()
+        flash('تم استعادة النسخة الاحتياطية بنجاح! يرجى تسجيل الدخول مجدداً.', 'success')
+        logout_user()
+        return redirect(url_for('login'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء الاستعادة: {str(e)}', 'danger')
+        return redirect(url_for('admin_dashboard') + '?tab=tasks')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)

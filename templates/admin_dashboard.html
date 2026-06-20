@@ -258,9 +258,33 @@
     <div id="tab-tasks" class="tab-content hidden space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- إعدادات المهام -->
+            <!-- إعدادات المهام والنسخ الاحتياطي -->
             <div class="lg:col-span-1 space-y-6">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
+                <!-- النسخ الاحتياطي -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-xl font-bold mb-4">النسخ الاحتياطي والاستعادة</h3>
+                    <p class="text-sm text-slate-500 mb-4">حمل بيانات المنصة أو قم باستعادتها لضمان عدم فقدانها.</p>
+                    
+                    <div class="space-y-4">
+                        <a href="{{ url_for('export_backup') }}" class="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-slate-200 text-sm font-bold rounded-xl text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            تحميل نسخة احتياطية
+                        </a>
+                        
+                        <div class="border-t border-slate-100 pt-4 mt-2">
+                            <form action="{{ url_for('import_backup') }}" method="POST" enctype="multipart/form-data" class="space-y-3" onsubmit="return confirm('تنبيه: سيتم مسح جميع البيانات الحالية واستبدالها بالبيانات من ملف النسخة الاحتياطية. هل أنت متأكد؟');">
+                                <label class="block text-sm font-bold text-slate-700">استعادة من ملف JSON</label>
+                                <input type="file" name="backup_file" accept=".json" required class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                                <button type="submit" class="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-rose-600 hover:bg-rose-700 transition shadow-md">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                    رفع واستعادة
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                     <h3 class="text-xl font-bold mb-4">إعدادات المنصة</h3>
                     <form action="{{ url_for('admin_update_config') }}" method="POST" class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
