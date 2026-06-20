@@ -291,7 +291,10 @@ def settings():
         # CCP Account Logic (60 days rule)
         if ccp_account and ccp_account != current_user.ccp_account:
             if current_user.ccp_last_changed:
-                days_since_ccp = (now - current_user.ccp_last_changed).days
+                last_changed_ccp = current_user.ccp_last_changed
+                if last_changed_ccp.tzinfo is not None:
+                    last_changed_ccp = last_changed_ccp.replace(tzinfo=None)
+                days_since_ccp = (now - last_changed_ccp).days
                 if days_since_ccp < 60:
                     flash(f'لا يمكنك تغيير حساب CCP الآن. يرجى الانتظار {60 - days_since_ccp} يوماً.', 'danger')
                 else:
@@ -313,7 +316,11 @@ def settings():
         # Instagram Logic (60 days rule)
         if instagram and instagram != current_user.instagram_username:
             if current_user.instagram_last_changed:
-                days_since = (now - current_user.instagram_last_changed).days
+                # Convert to offset-naive datetime before subtraction
+                last_changed = current_user.instagram_last_changed
+                if last_changed.tzinfo is not None:
+                    last_changed = last_changed.replace(tzinfo=None)
+                days_since = (now - last_changed).days
                 if days_since < 60:
                     flash(f'لا يمكنك تغيير حساب انستغرام الآن. يرجى الانتظار {60 - days_since} يوماً.', 'danger')
                 else:
@@ -328,7 +335,10 @@ def settings():
         # TikTok Logic (60 days rule)
         if tiktok and tiktok != current_user.tiktok_username:
             if current_user.tiktok_last_changed:
-                days_since_tk = (now - current_user.tiktok_last_changed).days
+                last_changed_tk = current_user.tiktok_last_changed
+                if last_changed_tk.tzinfo is not None:
+                    last_changed_tk = last_changed_tk.replace(tzinfo=None)
+                days_since_tk = (now - last_changed_tk).days
                 if days_since_tk < 60:
                     flash(f'لا يمكنك تغيير حساب تيك توك الآن. يرجى الانتظار {60 - days_since_tk} يوماً.', 'danger')
                 else:
@@ -349,7 +359,10 @@ def settings():
     can_change_ig = True
     ig_days_remaining = 0
     if current_user.instagram_last_changed:
-        days_since = (datetime.utcnow() - current_user.instagram_last_changed).days
+        last_changed = current_user.instagram_last_changed
+        if last_changed.tzinfo is not None:
+            last_changed = last_changed.replace(tzinfo=None)
+        days_since = (datetime.utcnow() - last_changed).days
         if days_since < 60:
             can_change_ig = False
             ig_days_remaining = 60 - days_since
@@ -358,7 +371,10 @@ def settings():
     can_change_tk = True
     tk_days_remaining = 0
     if current_user.tiktok_last_changed:
-        days_since_tk = (datetime.utcnow() - current_user.tiktok_last_changed).days
+        last_changed_tk = current_user.tiktok_last_changed
+        if last_changed_tk.tzinfo is not None:
+            last_changed_tk = last_changed_tk.replace(tzinfo=None)
+        days_since_tk = (datetime.utcnow() - last_changed_tk).days
         if days_since_tk < 60:
             can_change_tk = False
             tk_days_remaining = 60 - days_since_tk
@@ -367,7 +383,10 @@ def settings():
     can_change_ccp = True
     ccp_days_remaining = 0
     if current_user.ccp_last_changed:
-        days_since_ccp = (datetime.utcnow() - current_user.ccp_last_changed).days
+        last_changed_ccp = current_user.ccp_last_changed
+        if last_changed_ccp.tzinfo is not None:
+            last_changed_ccp = last_changed_ccp.replace(tzinfo=None)
+        days_since_ccp = (datetime.utcnow() - last_changed_ccp).days
         if days_since_ccp < 60:
             can_change_ccp = False
             ccp_days_remaining = 60 - days_since_ccp
