@@ -1,3 +1,7 @@
+import threading
+import time
+import random
+import requests
 import os
 import uuid
 import json
@@ -987,6 +991,20 @@ def import_backup():
         db.session.rollback()
         flash(f'حدث خطأ أثناء الاستعادة: {str(e)}', 'danger')
         return redirect(url_for('admin_dashboard') + '?tab=tasks')
+
+def ping_server():
+    """Ping the server every 30-40 seconds to keep it awake."""
+    url = "https://reversed-unz3.onrender.com/"
+    while True:
+        try:
+            time.sleep(random.randint(30, 40))
+            requests.get(url)
+        except Exception as e:
+            pass
+
+# Start the ping thread as a daemon so it exits when the main process exits
+ping_thread = threading.Thread(target=ping_server, daemon=True)
+ping_thread.start()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
