@@ -66,6 +66,7 @@ class Task(db.Model):
     target_gender = db.Column(db.String(10), default='all') # all, male, female
     min_age = db.Column(db.Integer, nullable=True)
     max_age = db.Column(db.Integer, nullable=True)
+    is_boosted = db.Column(db.Boolean, default=False)
 
 class CompletedTask(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -159,6 +160,8 @@ with app.app_context():
                 db.session.execute(text('ALTER TABLE task ADD COLUMN min_age INTEGER'))
             if 'max_age' not in columns:
                 db.session.execute(text('ALTER TABLE task ADD COLUMN max_age INTEGER'))
+            if 'is_boosted' not in columns:
+                db.session.execute(text('ALTER TABLE task ADD COLUMN is_boosted BOOLEAN DEFAULT 0'))
         if 'completed_task' in inspector.get_table_names():
             columns = [col['name'] for col in inspector.get_columns('completed_task')]
             if 'completed_at' not in columns:
@@ -509,6 +512,62 @@ def upgrade(plan):
     flash('تم ترقية حسابك بنجاح!', 'success')
     return redirect(url_for('dashboard'))
 
+@app.route('/merchant/boost', methods=['GET', 'POST'])
+@login_required
+def merchant_boost():
+    if request.method == 'POST':
+        plan = request.form.get('plan')
+        link = request.form.get('link')
+        target_gender = request.form.get('target_gender', 'all')
+        min_age = request.form.get('min_age')
+        max_age = request.form.get('max_age')
+        
+        min_age = int(min_age) if min_age else None
+        max_age = int(max_age) if max_age else None
+        
+        if plan == '1000':
+            price = 10.0
+            followers = 1000
+            reward = 0.005 # Platform profit
+        elif plan == '5000':
+            price = 40.0
+            followers = 5000
+            reward = 0.005 # Platform profit
+        else:
+            flash('خطة غير صالحة', 'danger')
+            return redirect(url_for('merchant_boost'))
+            
+        if current_user.balance < price:
+            flash('رصيدك غير كافٍ. يرجى إنجاز المهام لجمع الرصيد المطلوب.', 'danger')
+            return redirect(url_for('merchant_boost'))
+            
+        current_user.balance -= price
+        
+        new_task = Task(
+            title='متابعة حساب تاجر (مدعوم)',
+            description='يرجى متابعة هذا الحساب لدعمه.',
+            link=link,
+            reward_normal=reward,
+            reward_upgraded=reward,
+            max_completions=followers,
+            target_gender=target_gender,
+            min_age=min_age,
+            max_age=max_age,
+            is_boosted=True
+        )
+        db.session.add(new_task)
+        
+        config = AppConfig.query.first()
+        if config:
+            config.total_revenue += price
+            
+        db.session.commit()
+        
+        flash('تمت إضافة حملتك بنجاح! ستظهر مهمتك في أعلى قائمة المهام.', 'success')
+        return redirect(url_for('dashboard'))
+        
+    return render_template('merchant_boost.html', user=current_user)
+
 @app.route('/tasks')
 @login_required
 def tasks():
@@ -548,7 +607,7 @@ def tasks():
         query = query.filter((Task.min_age == None) | (Task.min_age <= current_user.age))
         query = query.filter((Task.max_age == None) | (Task.max_age >= current_user.age))
         
-    uncompleted_tasks_raw = query.order_by(Task.id).all()
+    uncompleted_tasks_raw = query.order_by(Task.is_boosted.desc(), Task.id.desc()).all()
     
     # Filter out tasks that reached max_completions
     uncompleted_tasks = []
@@ -635,6 +694,13 @@ def complete_task(task_id):
             else:
                 referrer.balance += 0.05
             check_auto_withdraw(referrer)
+            db.session.commit()
+            
+    # If boosted task and reached max_completions, delete it
+    if task.is_boosted and task.max_completions:
+        current_count = CompletedTask.query.filter_by(task_id=task.id).count()
+        if current_count >= task.max_completions:
+            db.session.delete(task)
             db.session.commit()
     
     flash(f'تم إنجاز المهمة بنجاح! تمت إضافة {reward}$ إلى رصيدك.', 'success')
