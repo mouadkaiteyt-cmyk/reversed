@@ -16,19 +16,19 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100">
-        <div class="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
+    <div class="bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-slate-100">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-6 border-b border-slate-100 gap-4">
             <div>
-                <h2 class="text-2xl font-bold text-slate-900">إنشاء حملة جديدة</h2>
-                <p class="text-slate-500 mt-1">اختر الباقة المناسبة وقم بتحديد الاستهداف</p>
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-900">إنشاء حملة جديدة</h2>
+                <p class="text-sm sm:text-base text-slate-500 mt-1">اختر الباقة المناسبة وقم بتحديد الاستهداف</p>
             </div>
-            <div class="flex items-center gap-3">
-                <div class="bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100 flex items-center h-full">
-                    <span class="text-indigo-600 font-medium text-sm">رصيدك الحالي:</span>
-                    <span class="text-xl font-bold text-indigo-700 mr-2">{{ "%.2f"|format(user.balance) }}$</span>
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="bg-indigo-50 px-3 py-2 sm:px-4 rounded-xl border border-indigo-100 flex items-center">
+                    <span class="text-indigo-600 font-medium text-xs sm:text-sm">رصيدك:</span>
+                    <span class="text-lg sm:text-xl font-bold text-indigo-700 mr-2" dir="ltr">{{ "%.2f"|format(user.balance) }}$</span>
                 </div>
                 {% if config and config.telegram_agent_link %}
-                <a href="{{ config.telegram_agent_link }}" target="_blank" class="bg-indigo-600 text-white px-4 py-2 rounded-xl border border-indigo-700 hover:bg-indigo-700 transition font-medium text-sm flex items-center h-full shadow-sm">
+                <a href="{{ config.telegram_agent_link }}" target="_blank" class="bg-indigo-600 text-white px-3 py-2 sm:px-4 rounded-xl border border-indigo-700 hover:bg-indigo-700 transition font-medium text-xs sm:text-sm flex items-center shadow-sm">
                     <svg class="w-4 h-4 ml-1.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.21-1.12-.33-1.08-.7.02-.19.27-.39.75-.59 2.95-1.29 4.92-2.14 5.9-2.55 2.81-1.18 3.39-1.38 3.77-1.38.08 0 .27.02.39.1.1.06.13.15.15.24.01.07.02.16.02.26z"/></svg>
                     شحن الرصيد
                 </a>
