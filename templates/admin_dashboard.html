@@ -107,7 +107,13 @@
                                     <form action="{{ url_for('admin_process_withdrawal', req_id=req.id, action='approve') }}" method="POST" onsubmit="return confirm('تأكيد الموافقة على الدفع؟');">
                                         <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">موافقة و دفع</button>
                                     </form>
-                                    <form action="{{ url_for('admin_process_withdrawal', req_id=req.id, action='reject') }}" method="POST" onsubmit="return confirm('هل أنت متأكد من الرفض؟ سيتم إعادة المبلغ لرصيد المستخدم.');">
+                                    <form action="{{ url_for('admin_process_withdrawal', req_id=req.id, action='reject') }}" method="POST" class="flex gap-1" onsubmit="return confirm('تأكيد رفض السحب وتصفير 50% من الأموال؟');">
+                                        <select name="reason" class="text-xs border border-slate-200 rounded px-1 py-1 focus:outline-none" required>
+                                            <option value="">اختر سبب الرفض...</option>
+                                            <option value="عدم القيام بأكثر من 25% من المهام">عدم القيام بـ 25% من المهام</option>
+                                            <option value="احالات وهمية">احالات وهمية</option>
+                                            <option value="نشاط غريب ومكرر">نشاط غريب ومكرر</option>
+                                        </select>
                                         <button type="submit" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">رفض</button>
                                     </form>
                                 </div>
@@ -140,6 +146,7 @@
                         <tr>
                             <th scope="col" class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">المستخدم</th>
                             <th scope="col" class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">المبلغ</th>
+                            <th scope="col" class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">الحالة / السبب</th>
                             <th scope="col" class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">تاريخ التنفيذ</th>
                         </tr>
                     </thead>
@@ -149,8 +156,16 @@
                             <td class="px-6 py-3 whitespace-nowrap">
                                 <div class="text-sm font-medium text-slate-900">{{ req.user.username }}</div>
                             </td>
-                            <td class="px-6 py-3 whitespace-nowrap text-sm font-bold text-emerald-600">
+                            <td class="px-6 py-3 whitespace-nowrap text-sm font-bold text-slate-900">
                                 {{ "%.2f"|format(req.amount) }}$
+                            </td>
+                            <td class="px-6 py-3 whitespace-nowrap">
+                                {% if req.status == 'approved' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">مكتمل</span>
+                                {% elif req.status == 'rejected' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-rose-800">مرفوض</span>
+                                <div class="text-[10px] text-slate-500 mt-1">{{ req.rejection_reason }}</div>
+                                {% endif %}
                             </td>
                             <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-500" dir="ltr">
                                 {{ req.processed_at.strftime('%Y-%m-%d %H:%M') if req.processed_at else '' }}

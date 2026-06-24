@@ -80,6 +80,7 @@ class WithdrawalRequest(db.Model):
     amount = db.Column(db.Float, nullable=False)
     ccp_account = db.Column(db.String(50), nullable=False)
     status = db.Column(db.String(20), default='pending') # pending, approved, rejected
+    rejection_reason = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     processed_at = db.Column(db.DateTime, nullable=True)
 
@@ -119,13 +120,22 @@ def check_auto_withdraw(user):
     """Check if user has reached their auto withdraw threshold and create a request if so."""
     if user.auto_withdraw_threshold and user.ccp_account:
         if user.balance >= user.auto_withdraw_threshold:
-            # Check if they already have a pending request
-            existing_request = WithdrawalRequest.query.filter_by(user_id=user.id, status='pending').first()
-            if not existing_request:
-                amount = user.balance
-                user.balance = 0.0
-                new_request = WithdrawalRequest(user_id=user.id, amount=amount, ccp_account=user.ccp_account)
-                db.session.add(new_request)
+            # Check for withdrawal conditions: 40 tasks completed, 100 active referrals
+            completed_tasks_count = CompletedTask.query.filter_by(user_id=user.id).count()
+            all_referred = User.query.filter_by(referred_by=user.id).all()
+            active_referrals_count = 0
+            for r_user in all_referred:
+                if CompletedTask.query.filter_by(user_id=r_user.id).count() >= 10:
+                    active_referrals_count += 1
+            
+            if completed_tasks_count >= 40 and active_referrals_count >= 100:
+                # Check if they already have a pending request
+                existing_request = WithdrawalRequest.query.filter_by(user_id=user.id, status='pending').first()
+                if not existing_request:
+                    amount = user.balance
+                    user.balance = 0.0
+                    new_request = WithdrawalRequest(user_id=user.id, amount=amount, ccp_account=user.ccp_account)
+                    db.session.add(new_request)
 
 with app.app_context():
     db.create_all()
@@ -168,6 +178,11 @@ with app.app_context():
                 db.session.execute(text('ALTER TABLE completed_task ADD COLUMN completed_at TIMESTAMP'))
                 # Update existing records to current time so they don't have NULL
                 db.session.execute(text("UPDATE completed_task SET completed_at = CURRENT_TIMESTAMP WHERE completed_at IS NULL"))
+        if 'withdrawal_request' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('withdrawal_request')]
+            if 'rejection_reason' not in columns:
+                db.session.execute(text('ALTER TABLE withdrawal_request ADD COLUMN rejection_reason VARCHAR(200)'))
+        
         if 'app_config' in inspector.get_table_names():
             columns = [col['name'] for col in inspector.get_columns('app_config')]
             if 'telegram_agent_link' not in columns:
@@ -773,7 +788,7 @@ def admin_dashboard():
     
     # Withdrawal Requests
     pending_withdrawals = WithdrawalRequest.query.filter_by(status='pending').order_by(WithdrawalRequest.created_at.desc()).all()
-    completed_withdrawals = WithdrawalRequest.query.filter_by(status='approved').order_by(WithdrawalRequest.processed_at.desc()).limit(10).all()
+    completed_withdrawals = WithdrawalRequest.query.filter(WithdrawalRequest.status.in_(['approved', 'rejected'])).order_by(WithdrawalRequest.processed_at.desc()).limit(15).all()
     
     # Stats
     total_users = User.query.count()
@@ -808,11 +823,13 @@ def admin_process_withdrawal(req_id, action):
         req.processed_at = datetime.utcnow()
         flash(f'تمت الموافقة على سحب {req.amount}$ للمستخدم {req.user.username}.', 'success')
     elif action == 'reject':
+        reason = request.form.get('reason', 'سبب غير محدد')
         req.status = 'rejected'
+        req.rejection_reason = reason
         req.processed_at = datetime.utcnow()
-        # Refund the user
-        req.user.balance += req.amount
-        flash(f'تم رفض طلب السحب وتم إعادة {req.amount}$ لرصيد المستخدم {req.user.username}.', 'info')
+        # Refund 50% of the amount (deduct 50%)
+        req.user.balance += (req.amount * 0.5)
+        flash(f'تم رفض طلب السحب بسبب "{reason}" وتم تصفير 50% من الأموال للمستخدم {req.user.username}.', 'info')
         
     db.session.commit()
     return redirect(url_for('admin_dashboard'))
