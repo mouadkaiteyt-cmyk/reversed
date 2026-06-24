@@ -86,6 +86,15 @@ class WithdrawalRequest(db.Model):
 
     user = db.relationship('User', backref=db.backref('withdrawals', lazy=True))
 
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    message = db.Column(db.String(500), nullable=False)
+    type = db.Column(db.String(20), default='info') # success, danger
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('notifications', lazy=True))
+
 class AppConfig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     normal_daily_limit = db.Column(db.Integer, default=4)
@@ -164,6 +173,8 @@ with app.app_context():
             columns = [col['name'] for col in inspector.get_columns('withdrawal_request')]
             if 'rejection_reason' not in columns:
                 db.session.execute(text('ALTER TABLE withdrawal_request ADD COLUMN rejection_reason VARCHAR(200)'))
+        if 'notification' not in inspector.get_table_names():
+            Notification.__table__.create(db.engine)
         
         if 'app_config' in inspector.get_table_names():
             columns = [col['name'] for col in inspector.get_columns('app_config')]
@@ -290,6 +301,15 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+@app.route('/notifications/read/<int:notif_id>', methods=['POST'])
+@login_required
+def read_notification(notif_id):
+    notif = Notification.query.get_or_404(notif_id)
+    if notif.user_id == current_user.id:
+        db.session.delete(notif)
+        db.session.commit()
+    return redirect(url_for('dashboard'))
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -313,6 +333,7 @@ def dashboard():
     completed_tasks_count = len(completed_task_ids)
     
     config = AppConfig.query.first()
+    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
     
     return render_template('dashboard.html', 
                            user=current_user, 
@@ -323,7 +344,8 @@ def dashboard():
                            completed_task_ids=completed_task_ids,
                            total_tasks=total_tasks,
                            completed_tasks_count=completed_tasks_count,
-                           config=config)
+                           config=config,
+                           notifications=notifications)
 
 @app.route('/withdraw', methods=['POST'])
 @login_required
@@ -835,6 +857,8 @@ def admin_process_withdrawal(req_id, action):
     if action == 'approve':
         req.status = 'approved'
         req.processed_at = datetime.utcnow()
+        notif = Notification(user_id=req.user_id, message=f'تمت الموافقة على طلب سحب بقيمة {req.amount}$.', type='success')
+        db.session.add(notif)
         flash(f'تمت الموافقة على سحب {req.amount}$ للمستخدم {req.user.username}.', 'success')
     elif action == 'reject':
         reason = request.form.get('reason', 'سبب غير محدد')
@@ -843,6 +867,8 @@ def admin_process_withdrawal(req_id, action):
         req.processed_at = datetime.utcnow()
         # Refund 50% of the amount (deduct 50%)
         req.user.balance += (req.amount * 0.5)
+        notif = Notification(user_id=req.user_id, message=f'تم رفض طلب سحب بقيمة {req.amount}$ بسبب: {reason}. وتم خصم 50% من الأموال.', type='danger')
+        db.session.add(notif)
         flash(f'تم رفض طلب السحب بسبب "{reason}" وتم تصفير 50% من الأموال للمستخدم {req.user.username}.', 'info')
         
     db.session.commit()

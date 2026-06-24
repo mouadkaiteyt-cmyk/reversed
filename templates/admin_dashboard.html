@@ -110,9 +110,9 @@
                                     <form action="{{ url_for('admin_process_withdrawal', req_id=req.id, action='reject') }}" method="POST" class="flex gap-1" onsubmit="return confirm('تأكيد رفض السحب وتصفير 50% من الأموال؟');">
                                         <select name="reason" class="text-xs border border-slate-200 rounded px-1 py-1 focus:outline-none" required>
                                             <option value="">اختر سبب الرفض...</option>
-                                            <option value="عدم القيام بأكثر من 25% من المهام">عدم القيام بـ 25% من المهام</option>
-                                            <option value="احالات وهمية">احالات وهمية</option>
-                                            <option value="نشاط غريب ومكرر">نشاط غريب ومكرر</option>
+                                            <option value="عدم القيام بأكثر من 25% من المهام">عدم القيام بأكثر من 25% من المهام</option>
+                                            <option value="احالات وهمية او غير نشطة">احالات وهمية او غير نشطة</option>
+                                            <option value="نشاط غريب">نشاط غريب</option>
                                         </select>
                                         <button type="submit" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">رفض</button>
                                     </form>
