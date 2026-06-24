@@ -13,9 +13,9 @@
     </style>
     <!-- Header -->
     {% if notifications %}
-    <div class="space-y-3 mb-6">
+    <div id="notifications-container" class="space-y-3 mb-6">
         {% for notif in notifications %}
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl shadow-sm border gap-4 {% if notif.type == 'success' %}bg-emerald-50 border-emerald-100 text-emerald-800{% else %}bg-rose-50 border-rose-100 text-rose-800{% endif %}">
+        <div id="notif-{{ notif.id }}" class="transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl shadow-sm border gap-4 {% if notif.type == 'success' %}bg-emerald-50 border-emerald-100 text-emerald-800{% else %}bg-rose-50 border-rose-100 text-rose-800{% endif %}">
             <div class="flex items-center gap-3">
                 {% if notif.type == 'success' %}
                 <svg class="w-6 h-6 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -24,11 +24,9 @@
                 {% endif %}
                 <p class="text-sm font-bold">{{ notif.message }}</p>
             </div>
-            <form action="{{ url_for('read_notification', notif_id=notif.id) }}" method="POST" class="shrink-0 self-end sm:self-auto">
-                <button type="submit" class="text-xs px-4 py-2 rounded-xl font-bold transition-colors {% if notif.type == 'success' %}bg-emerald-200 hover:bg-emerald-300 text-emerald-900{% else %}bg-rose-200 hover:bg-rose-300 text-rose-900{% endif %}">
-                    تم القراءة
-                </button>
-            </form>
+            <button type="button" onclick="readNotification({{ notif.id }})" class="shrink-0 self-end sm:self-auto text-xs px-4 py-2 rounded-xl font-bold transition-colors {% if notif.type == 'success' %}bg-emerald-200 hover:bg-emerald-300 text-emerald-900{% else %}bg-rose-200 hover:bg-rose-300 text-rose-900{% endif %}">
+                تم القراءة
+            </button>
         </div>
         {% endfor %}
     </div>
@@ -372,6 +370,28 @@
 </div>
 
 <script>
+function readNotification(notifId) {
+    const el = document.getElementById('notif-' + notifId);
+    if (el) {
+        el.style.opacity = '0';
+        el.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            el.remove();
+            const container = document.getElementById('notifications-container');
+            if (container && container.children.length === 0) {
+                container.remove();
+            }
+        }, 300);
+    }
+    
+    fetch('/notifications/read/' + notifId, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    });
+}
+
 function copyToClipboard() {
     var copyText = document.getElementById("referral-link");
     copyText.select();

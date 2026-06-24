@@ -7,7 +7,7 @@ import uuid
 import json
 from datetime import datetime, timedelta
 from functools import wraps
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, get_flashed_messages, make_response
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, get_flashed_messages, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -308,6 +308,9 @@ def read_notification(notif_id):
     if notif.user_id == current_user.id:
         db.session.delete(notif)
         db.session.commit()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'success': True})
     return redirect(url_for('dashboard'))
 
 @app.route('/dashboard')
