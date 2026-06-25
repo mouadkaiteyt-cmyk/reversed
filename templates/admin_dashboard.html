@@ -513,45 +513,56 @@
         </div>
         <!-- Ad Settings Tab -->
         <div id="tab-ad" class="tab-content hidden">
-            <div class="bg-white shadow-sm rounded-3xl p-6 sm:p-8 border border-slate-100 max-w-2xl mx-auto">
-                <h3 class="text-xl font-bold text-slate-900 mb-6">إعدادات المساحة الإعلانية</h3>
+            <div class="bg-white shadow-sm rounded-3xl p-6 sm:p-8 border border-slate-100 max-w-4xl mx-auto">
+                <h3 class="text-xl font-bold text-slate-900 mb-6">إعدادات المساحة الإعلانية (3 إعلانات متحركة)</h3>
                 
-                <div class="mb-8 grid grid-cols-2 gap-4">
-                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
-                        <p class="text-sm font-bold text-slate-500 mb-1">المشاهدات</p>
-                        <h4 class="text-2xl font-black text-slate-900">{{ ad.views if ad else 0 }}</h4>
-                    </div>
-                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
-                        <p class="text-sm font-bold text-slate-500 mb-1">النقرات</p>
-                        <h4 class="text-2xl font-black text-slate-900">{{ ad.clicks if ad else 0 }}</h4>
-                    </div>
-                </div>
+                <form action="{{ url_for('admin_update_ad') }}" method="POST" class="space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {% for i in range(1, 4) %}
+                        {% set current_ad = ads[i-1] if ads|length >= i else None %}
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                            <h4 class="font-bold text-lg text-purple-700 mb-4">الإعلان رقم {{ i }}</h4>
+                            
+                            <div class="mb-4 grid grid-cols-2 gap-2 text-center">
+                                <div class="bg-white p-2 rounded-xl border border-slate-100">
+                                    <p class="text-xs font-bold text-slate-500">المشاهدات</p>
+                                    <p class="font-black text-slate-900">{{ current_ad.views if current_ad else 0 }}</p>
+                                </div>
+                                <div class="bg-white p-2 rounded-xl border border-slate-100">
+                                    <p class="text-xs font-bold text-slate-500">النقرات</p>
+                                    <p class="font-black text-slate-900">{{ current_ad.clicks if current_ad else 0 }}</p>
+                                </div>
+                            </div>
 
-                <form action="{{ url_for('admin_update_ad') }}" method="POST" class="space-y-5">
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">رابط صورة الإعلان (Aspect Ratio 3:2)</label>
-                        <input type="url" name="image_url" value="{{ ad.image_url if ad else '' }}" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition text-sm" dir="ltr" placeholder="https://example.com/image.jpg">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">رابط التوجيه (Target URL)</label>
-                        <input type="url" name="target_url" value="{{ ad.target_url if ad else '' }}" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition text-sm" dir="ltr" placeholder="https://example.com">
-                    </div>
-                    
-                    <div class="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <input type="checkbox" name="is_active" id="ad_is_active" class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500 border-slate-300" {% if ad and ad.is_active %}checked{% endif %}>
-                        <label for="ad_is_active" class="text-sm font-bold text-slate-700">تفعيل الإعلان (إظهاره للمستخدمين)</label>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">رابط الصورة (3:2)</label>
+                                    <input type="url" name="image_url_{{ i }}" value="{{ current_ad.image_url if current_ad else '' }}" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-purple-500 text-xs" dir="ltr" placeholder="https://example.com/img.jpg">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">رابط التوجيه</label>
+                                    <input type="url" name="target_url_{{ i }}" value="{{ current_ad.target_url if current_ad else '' }}" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-purple-500 text-xs" dir="ltr" placeholder="https://example.com">
+                                </div>
+                                
+                                <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-100">
+                                    <input type="checkbox" name="is_active_{{ i }}" id="is_active_{{ i }}" class="w-4 h-4 text-purple-600 rounded" {% if current_ad and current_ad.is_active %}checked{% endif %}>
+                                    <label for="is_active_{{ i }}" class="text-xs font-bold text-slate-700">تفعيل الإعلان</label>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
 
-                    <div class="flex items-center gap-3 bg-rose-50 p-4 rounded-xl border border-rose-100">
+                    <div class="flex items-center gap-3 bg-rose-50 p-4 rounded-xl border border-rose-100 mt-6">
                         <input type="checkbox" name="reset_stats" id="reset_stats" class="w-5 h-5 text-rose-600 rounded focus:ring-rose-500 border-rose-300">
-                        <label for="reset_stats" class="text-sm font-bold text-rose-700">تصفير الإحصائيات (المشاهدات والنقرات)</label>
+                        <label for="reset_stats" class="text-sm font-bold text-rose-700">تصفير الإحصائيات لجميع الإعلانات (المشاهدات والنقرات)</label>
                     </div>
                     
-                    <div class="pt-4">
+                    <div class="pt-2">
                         <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white px-6 py-3.5 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            حفظ الإعدادات
+                            حفظ إعدادات الإعلانات
                         </button>
                     </div>
                 </form>

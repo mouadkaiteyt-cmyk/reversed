@@ -347,10 +347,10 @@ def dashboard():
     config = AppConfig.query.first()
     notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
     
-    ad = Advertisement.query.filter_by(is_active=True).first()
-    if ad:
+    ads = Advertisement.query.filter_by(is_active=True).all()
+    for ad in ads:
         ad.views += 1
-        db.session.commit()
+    db.session.commit()
     
     return render_template('dashboard.html', 
                            user=current_user, 
@@ -363,7 +363,7 @@ def dashboard():
                            completed_tasks_count=completed_tasks_count,
                            config=config,
                            notifications=notifications,
-                           ad=ad)
+                           ads=ads)
 
 @app.route('/ad_click/<int:ad_id>')
 def ad_click(ad_id):
@@ -861,7 +861,7 @@ def admin_dashboard():
     pending_amount = pending_amount_result if pending_amount_result else 0.0
 
     # Ad settings
-    ad = Advertisement.query.first()
+    ads = Advertisement.query.all()
 
     return render_template('admin_dashboard.html', 
                            users=users, 
@@ -873,7 +873,7 @@ def admin_dashboard():
                            upgraded_users=upgraded_users,
                            total_paid=total_paid,
                            pending_amount=pending_amount,
-                           ad=ad)
+                           ads=ads)
 
 @app.route('/admin/withdrawals/<int:req_id>/<action>', methods=['POST'])
 @admin_required
@@ -906,25 +906,32 @@ def admin_process_withdrawal(req_id, action):
 @app.route('/admin/ad/update', methods=['POST'])
 @admin_required
 def admin_update_ad():
-    image_url = request.form.get('image_url')
-    target_url = request.form.get('target_url')
-    is_active = request.form.get('is_active') == 'on'
-    
-    ad = Advertisement.query.first()
-    if not ad:
-        ad = Advertisement()
-        db.session.add(ad)
+    ads = Advertisement.query.all()
+    # Ensure there are 3 ads in the database
+    while len(ads) < 3:
+        new_ad = Advertisement(image_url='', target_url='', is_active=False)
+        db.session.add(new_ad)
+        db.session.commit()
+        ads.append(new_ad)
+
+    for i in range(1, 4):
+        ad = ads[i-1]
+        image_url = request.form.get(f'image_url_{i}')
+        target_url = request.form.get(f'target_url_{i}')
+        is_active = request.form.get(f'is_active_{i}') == 'on'
         
-    ad.image_url = image_url
-    ad.target_url = target_url
-    ad.is_active = is_active
-    
+        if image_url is not None and target_url is not None:
+            ad.image_url = image_url
+            ad.target_url = target_url
+            ad.is_active = is_active
+
     if request.form.get('reset_stats') == 'on':
-        ad.views = 0
-        ad.clicks = 0
-        
+        for ad in ads:
+            ad.views = 0
+            ad.clicks = 0
+            
     db.session.commit()
-    flash('تم تحديث إعدادات الإعلان بنجاح.', 'success')
+    flash('تم تحديث إعدادات الإعلانات بنجاح.', 'success')
     return redirect(url_for('admin_dashboard') + '?tab=ad')
 
 @app.route('/admin/config/update', methods=['POST'])
