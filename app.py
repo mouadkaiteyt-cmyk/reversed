@@ -100,6 +100,7 @@ class AppConfig(db.Model):
     normal_daily_limit = db.Column(db.Integer, default=4)
     upgraded_daily_limit = db.Column(db.Integer, default=10)
     telegram_agent_link = db.Column(db.String(200), default='https://t.me/YourAgent')
+    instagram_agent_link = db.Column(db.String(200), default='https://instagram.com/YourAgent')
     total_revenue = db.Column(db.Float, default=0.0)
 
 class Advertisement(db.Model):
@@ -189,6 +190,8 @@ with app.app_context():
             columns = [col['name'] for col in inspector.get_columns('app_config')]
             if 'telegram_agent_link' not in columns:
                 db.session.execute(text("ALTER TABLE app_config ADD COLUMN telegram_agent_link VARCHAR(200) DEFAULT 'https://t.me/YourAgent'"))
+            if 'instagram_agent_link' not in columns:
+                db.session.execute(text("ALTER TABLE app_config ADD COLUMN instagram_agent_link VARCHAR(200) DEFAULT 'https://instagram.com/YourAgent'"))
             if 'total_revenue' not in columns:
                 db.session.execute(text("ALTER TABLE app_config ADD COLUMN total_revenue FLOAT DEFAULT 0.0"))
         db.session.commit()
@@ -548,7 +551,7 @@ def upgrade_instructions(plan):
         abort(400)
     
     config = AppConfig.query.first()
-    return render_template('agent_upgrade.html', plan=plan, telegram_link=config.telegram_agent_link)
+    return render_template('agent_upgrade.html', plan=plan, telegram_link=config.telegram_agent_link, instagram_link=config.instagram_agent_link)
 
 @app.route('/upgrade/<plan>', methods=['POST'])
 @login_required
@@ -948,6 +951,7 @@ def admin_update_config():
     normal_limit = request.form.get('normal_daily_limit')
     upgraded_limit = request.form.get('upgraded_daily_limit')
     telegram_agent_link = request.form.get('telegram_agent_link')
+    instagram_agent_link = request.form.get('instagram_agent_link')
     
     if normal_limit and upgraded_limit:
         config.normal_daily_limit = int(normal_limit)
@@ -955,6 +959,9 @@ def admin_update_config():
         
     if telegram_agent_link:
         config.telegram_agent_link = telegram_agent_link
+        
+    if instagram_agent_link:
+        config.instagram_agent_link = instagram_agent_link
         
     db.session.commit()
     flash('تم تحديث الإعدادات بنجاح.', 'success')
