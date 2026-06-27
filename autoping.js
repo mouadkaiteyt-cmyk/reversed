@@ -1,12 +1,14 @@
 const https = require('https');
+const http = require('http');
 
-const url = 'https://reversed-unz3.onrender.com';
+const url = process.env.RENDER_EXTERNAL_URL || 'http://localhost:8000';
 const interval = 5000; // 5 ثواني
 
 console.log(`Starting autoping for ${url} every 5 seconds...`);
 
 setInterval(() => {
-  https.get(url, (res) => {
+  const client = url.startsWith('https') ? https : http;
+  client.get(url, (res) => {
     console.log(`[${new Date().toISOString()}] Pinged ${url} - Status: ${res.statusCode}`);
     
     // تفريغ البيانات لتجنب تسرب الذاكرة (Memory Leak)

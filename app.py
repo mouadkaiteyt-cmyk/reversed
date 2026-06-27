@@ -1218,7 +1218,7 @@ def import_backup():
 
 def ping_server():
     """Ping the server every 30-40 seconds to keep it awake."""
-    url = "https://reversed-unz3.onrender.com/"
+    url = os.environ.get('RENDER_EXTERNAL_URL', 'http://localhost:8000/')
     while True:
         try:
             time.sleep(random.randint(30, 40))

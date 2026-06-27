@@ -2,8 +2,9 @@ import urllib.request
 import time
 import datetime
 import threading
+import os
 
-URL = 'https://reversed-unz3.onrender.com'
+URL = os.environ.get('RENDER_EXTERNAL_URL', 'http://localhost:8000')
 INTERVAL = 40  # 40 seconds
 
 def ping():
