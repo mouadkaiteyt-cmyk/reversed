@@ -13,12 +13,12 @@
             </h1>
             <p class="mt-2 text-slate-500 text-sm sm:text-base pr-14">استخدم رصيدك في الموقع لشراء منتجات رقمية قيمة بأسعار مميزة.</p>
         </div>
-        <div class="flex items-center gap-3">
-            <a href="{{ url_for('my_products') }}" class="inline-flex items-center px-5 py-3 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+        <div class="flex items-stretch gap-3 h-12 sm:h-14">
+            <a href="{{ url_for('my_products') }}" class="flex items-center px-5 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors border border-transparent">
                 <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 مشترياتي
             </a>
-            <div class="bg-purple-100 text-purple-800 px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2 border border-purple-200">
+            <div class="bg-purple-100 text-purple-800 px-5 rounded-xl text-sm font-bold flex items-center gap-2 border border-purple-200">
                 <span>رصيدك:</span>
                 <span class="text-lg">{{ "%.2f"|format(current_user.balance) }}$</span>
             </div>
