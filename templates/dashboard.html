@@ -301,6 +301,26 @@
         </div>
     </div>
 
+    <!-- Store Section -->
+    <div class="mb-8">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6 group hover:border-purple-200 transition-colors">
+            <div class="flex items-start gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-2">المتجر الرقمي</h3>
+                    <p class="text-slate-500 text-sm sm:text-base">استخدم رصيدك لشراء منتجات رقمية مميزة بروابط تحميل دائمة. كما تحصل على عمولة <strong class="text-purple-600">20%</strong> (أو <strong class="text-purple-600">40%</strong> لحسابات المطورين) من مشتريات الأشخاص الذين دعوتهم!</p>
+                </div>
+            </div>
+            <div class="w-full md:w-auto shrink-0 flex flex-col sm:flex-row gap-3">
+                <a href="{{ url_for('store') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 text-base font-bold rounded-xl text-white bg-purple-600 hover:bg-purple-700 transition shadow-md">
+                    تصفح المتجر
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Memberships Section -->
     <div class="mb-8">
         <div class="text-center mb-8">

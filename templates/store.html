@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6 sm:space-y-8 px-2 sm:px-0">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-3">
+                <div class="p-3 bg-purple-50 rounded-2xl text-purple-600">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                </div>
+                المتجر الرقمي
+            </h1>
+            <p class="mt-2 text-slate-500 text-sm sm:text-base pr-14">استخدم رصيدك في الموقع لشراء منتجات رقمية قيمة بأسعار مميزة.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('my_products') }}" class="inline-flex items-center px-5 py-3 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                مشترياتي
+            </a>
+            <div class="bg-purple-100 text-purple-800 px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2 border border-purple-200">
+                <span>رصيدك:</span>
+                <span class="text-lg">{{ "%.2f"|format(current_user.balance) }}$</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for product in products %}
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col group hover:shadow-md transition-all">
+            <div class="relative h-48 w-full bg-slate-100 overflow-hidden">
+                {% if product.image_url %}
+                <img src="{{ product.image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                {% else %}
+                <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50">
+                    <svg class="w-16 h-16 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                </div>
+                {% endif %}
+                <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-sm font-black text-purple-700 shadow-sm border border-white/20">
+                    {{ "%.2f"|format(product.price) }}$
+                </div>
+            </div>
+            
+            <div class="p-6 flex flex-col flex-1">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">{{ product.name }}</h3>
+                <p class="text-slate-500 text-sm mb-6 flex-1">{{ product.description }}</p>
+                
+                {% if product.id in purchased_ids %}
+                    <a href="{{ url_for('my_products') }}" class="w-full text-center py-3.5 rounded-xl bg-emerald-100 text-emerald-700 font-bold border border-emerald-200 hover:bg-emerald-200 transition-colors">
+                        تم الشراء (انتقل لمشترياتي)
+                    </a>
+                {% else %}
+                    <form action="{{ url_for('buy_product', product_id=product.id) }}" method="POST" onsubmit="return confirm('تأكيد شراء {{ product.name }} بسعر {{ product.price }}$؟');">
+                        {% if current_user.balance >= product.price %}
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all shadow-md hover:shadow-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            شراء الآن
+                        </button>
+                        {% else %}
+                        <button type="button" disabled class="w-full py-3.5 rounded-xl bg-slate-100 text-slate-400 font-bold border border-slate-200 cursor-not-allowed">
+                            رصيد غير كافٍ
+                        </button>
+                        {% endif %}
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-1 md:col-span-2 lg:col-span-3 text-center py-16 bg-white rounded-3xl border border-slate-100 shadow-sm">
+            <div class="w-24 h-24 mx-auto bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-700 mb-2">المتجر فارغ حالياً</h3>
+            <p class="text-slate-500">سيتم إضافة منتجات جديدة قريباً.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

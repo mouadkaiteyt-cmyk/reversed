@@ -112,6 +112,25 @@ class Advertisement(db.Model):
     clicks = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    image_url = db.Column(db.String(500), nullable=True)
+    file_url = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Purchase(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    price_paid = db.Column(db.Float, nullable=False)
+    purchased_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref=db.backref('purchases', lazy=True))
+    product = db.relationship('Product', backref=db.backref('purchases', lazy=True))
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -185,6 +204,10 @@ with app.app_context():
                 db.session.execute(text('ALTER TABLE withdrawal_request ADD COLUMN rejection_reason VARCHAR(200)'))
         if 'notification' not in inspector.get_table_names():
             Notification.__table__.create(db.engine)
+        if 'product' not in inspector.get_table_names():
+            Product.__table__.create(db.engine)
+        if 'purchase' not in inspector.get_table_names():
+            Purchase.__table__.create(db.engine)
         
         if 'app_config' in inspector.get_table_names():
             columns = [col['name'] for col in inspector.get_columns('app_config')]
@@ -813,6 +836,69 @@ def complete_task(task_id):
     flash(f'تم إنجاز المهمة بنجاح! تمت إضافة {reward}$ إلى رصيدك.', 'success')
     return redirect(url_for('tasks'))
 
+@app.route('/store')
+@login_required
+def store():
+    products = Product.query.order_by(Product.created_at.desc()).all()
+    # Get IDs of products the user has already purchased
+    purchased_ids = [p.product_id for p in current_user.purchases]
+    return render_template('store.html', products=products, purchased_ids=purchased_ids)
+
+@app.route('/store/buy/<int:product_id>', methods=['POST'])
+@login_required
+def buy_product(product_id):
+    product = Product.query.get_or_404(product_id)
+    
+    # Check if already purchased
+    existing_purchase = Purchase.query.filter_by(user_id=current_user.id, product_id=product.id).first()
+    if existing_purchase:
+        flash('لقد قمت بشراء هذا المنتج مسبقاً.', 'info')
+        return redirect(url_for('my_products'))
+        
+    if current_user.balance < product.price:
+        flash('رصيدك غير كافٍ لشراء هذا المنتج.', 'danger')
+        return redirect(url_for('store'))
+        
+    # Deduct balance
+    current_user.balance -= product.price
+    
+    # Create purchase
+    new_purchase = Purchase(user_id=current_user.id, product_id=product.id, price_paid=product.price)
+    db.session.add(new_purchase)
+    
+    # Process referral reward
+    if current_user.referred_by:
+        referrer = User.query.get(current_user.referred_by)
+        if referrer:
+            if referrer.is_upgraded:
+                reward = product.price * 0.40
+            else:
+                reward = product.price * 0.20
+            referrer.balance += reward
+            
+            # Notify referrer
+            notif = Notification(user_id=referrer.id, message=f'حصلت على عمولة {reward:.2f}$ من شراء أحد إحالاتك لمنتج في المتجر.', type='success')
+            db.session.add(notif)
+            
+    # Add revenue to total platform revenue (remaining percentage)
+    config = AppConfig.query.first()
+    if config:
+        if current_user.referred_by and referrer:
+            platform_revenue = product.price - reward
+        else:
+            platform_revenue = product.price
+        config.total_revenue += platform_revenue
+        
+    db.session.commit()
+    flash('تم شراء المنتج بنجاح! يمكنك الآن تحميله.', 'success')
+    return redirect(url_for('my_products'))
+
+@app.route('/store/my_products')
+@login_required
+def my_products():
+    purchases = Purchase.query.filter_by(user_id=current_user.id).order_by(Purchase.purchased_at.desc()).all()
+    return render_template('my_products.html', purchases=purchases)
+
 # Admin Routes
 @app.route('/admin')
 @admin_required
@@ -879,6 +965,9 @@ def admin_dashboard():
         db.session.commit()
         ads = Advertisement.query.all()
 
+    # Products
+    products = Product.query.order_by(Product.created_at.desc()).all()
+    
     return render_template('admin_dashboard.html', 
                            users=users, 
                            tasks=tasks, 
@@ -889,7 +978,8 @@ def admin_dashboard():
                            upgraded_users=upgraded_users,
                            total_paid=total_paid,
                            pending_amount=pending_amount,
-                           ads=ads)
+                           ads=ads,
+                           products=products)
 
 @app.route('/admin/withdrawals/<int:req_id>/<action>', methods=['POST'])
 @admin_required
@@ -1042,6 +1132,46 @@ def admin_delete_task(task_id):
     db.session.commit()
     flash('تم حذف المهمة بنجاح.', 'success')
     return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/products/add', methods=['POST'])
+@admin_required
+def admin_add_product():
+    name = request.form.get('name')
+    description = request.form.get('description')
+    price = request.form.get('price', type=float)
+    image_url = request.form.get('image_url')
+    file_url = request.form.get('file_url')
+    
+    if not all([name, description, price, file_url]):
+        flash('يرجى ملء جميع الحقول المطلوبة.', 'danger')
+        return redirect(url_for('admin_dashboard') + '?tab=products')
+        
+    new_product = Product(
+        name=name,
+        description=description,
+        price=price,
+        image_url=image_url,
+        file_url=file_url
+    )
+    db.session.add(new_product)
+    db.session.commit()
+    
+    flash('تمت إضافة المنتج بنجاح.', 'success')
+    return redirect(url_for('admin_dashboard') + '?tab=products')
+
+@app.route('/admin/products/delete/<int:product_id>', methods=['POST'])
+@admin_required
+def admin_delete_product(product_id):
+    product = Product.query.get_or_404(product_id)
+    # Don't delete purchases, just nullify the product reference or leave it
+    # Actually, if we delete the product, it will cause issues with purchases if not cascade delete.
+    # We should delete purchases first or set them to null. For simplicity, we'll cascade delete purchases.
+    Purchase.query.filter_by(product_id=product.id).delete()
+    db.session.delete(product)
+    db.session.commit()
+    
+    flash('تم حذف المنتج بنجاح.', 'success')
+    return redirect(url_for('admin_dashboard') + '?tab=products')
 
 @app.route('/admin/users/update/<int:user_id>', methods=['POST'])
 @admin_required
